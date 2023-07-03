@@ -2,7 +2,7 @@
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
-extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim2, htim3;
 extern DMA_HandleTypeDef hdma_tim4_ch3;
 
 void NMI_Handler(void) {
@@ -42,6 +42,11 @@ void I2C1_EV_IRQHandler(void) {
 
 void USART1_IRQHandler(void) {
     HAL_UART_IRQHandler(&huart1);
+}
+
+void TIM2_IRQHandler(void) {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    HAL_TIM_IRQHandler(&htim2);
 }
 
 void TIM3_IRQHandler(void) {

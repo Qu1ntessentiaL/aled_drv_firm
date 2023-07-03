@@ -41,6 +41,7 @@ file(GLOB_RECURSE SOURCES
         Src/stm32f1xx_it.c
         Src/ssd1306/ssd1306.c
         Src/ssd1306/fonts.c
+        Src/ssd1306/images.c
         Src/system.c
         Src/ARGB/ARGB.c
         )

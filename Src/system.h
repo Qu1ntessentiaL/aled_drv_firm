@@ -21,4 +21,6 @@ void Encoder_Init(void);
 
 void ARGB_PreInit(void);
 
+void TIM2_Init(void);
+
 #endif //PERIPH_H

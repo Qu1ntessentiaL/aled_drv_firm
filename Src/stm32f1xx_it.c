@@ -45,7 +45,6 @@ void USART1_IRQHandler(void) {
 }
 
 void TIM2_IRQHandler(void) {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     HAL_TIM_IRQHandler(&htim2);
 }
 

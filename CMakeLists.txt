@@ -30,6 +30,7 @@ include_directories(
         Src/
         Src/ARGB/
         Src/ssd1306/
+        Src/button
 )
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
@@ -44,6 +45,7 @@ file(GLOB_RECURSE SOURCES
         Src/ssd1306/images.c
         Src/system.c
         Src/ARGB/ARGB.c
+        Src/button/button.c
         )
 
 set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")

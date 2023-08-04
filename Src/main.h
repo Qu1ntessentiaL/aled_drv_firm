@@ -14,6 +14,7 @@ extern "C" {
 #include "ssd1306/ssd1306.h"
 #include "system.h"
 #include "ARGB/ARGB.h"
+#include "button/button.h"
 
 #ifdef  USE_FULL_ASSERT
 void assert_failed(uint8_t *file, uint32_t line) {}

@@ -311,7 +311,7 @@ ARGB_STATE ARGB_Show(void) {
     if (BUF_COUNTER != 0 || DMA_HANDLE.State != HAL_DMA_STATE_READY) {
         return ARGB_BUSY;
     } else {
-        for (volatile uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 8; i++) {
             // Set first transfer from first values
             PWM_BUF[i] = (((RGB_BUF[0] << i) & 0x80) > 0) ? PWM_HI : PWM_LO;
             PWM_BUF[i + 8] = (((RGB_BUF[1] << i) & 0x80) > 0) ? PWM_HI : PWM_LO;
@@ -485,7 +485,7 @@ static void ARGB_TIM_DMADelayPulseCplt(DMA_HandleTypeDef *hdma) {
 // If data transfer
     if (BUF_COUNTER < NUM_PIXELS) {
         // Fill second part of buffer
-        for (volatile uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 8; i++) {
 #ifdef SK6812
             PWM_BUF[i + 32] = (((RGB_BUF[4 * BUF_COUNTER] << i) & 0x80) > 0) ? PWM_HI : PWM_LO;
             PWM_BUF[i + 40] = (((RGB_BUF[4 * BUF_COUNTER + 1] << i) & 0x80) > 0) ? PWM_HI : PWM_LO;
@@ -546,7 +546,7 @@ static void ARGB_TIM_DMADelayPulseHalfCplt(DMA_HandleTypeDef *hdma) {
     // If data transfer
     if (BUF_COUNTER < NUM_PIXELS) {
         // Fill first part of buffer
-        for (volatile uint8_t i = 0; i < 8; i++) {
+        for (uint8_t i = 0; i < 8; i++) {
 #ifdef SK6812
             PWM_BUF[i] = (((RGB_BUF[4 * BUF_COUNTER] << i) & 0x80) > 0) ? PWM_HI : PWM_LO;
             PWM_BUF[i + 8] = (((RGB_BUF[4 * BUF_COUNTER + 1] << i) & 0x80) > 0) ? PWM_HI : PWM_LO;

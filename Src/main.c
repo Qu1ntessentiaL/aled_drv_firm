@@ -17,11 +17,20 @@ int main() {
     HAL_TIM_Base_Start_IT(&htim2);
     ARGB_PreInit();
     ARGB_Init();
+    ARGB_SetBrightness(255);
     __enable_irq();
     while (1) {
-        ARGB_FillRGB(red_g, green_g, blue_g);
-        while (!ARGB_Show());
-        HAL_Delay(500);
+        SSD1306_Fill(SSD1306_COLOR_BLACK);
+        SSD1306_GotoXY(0, 0);
+        sprintf(buff, "RED:   %d", red_g);
+        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        SSD1306_GotoXY(0, 22);
+        sprintf(buff, "GREEN: %d", green_g);
+        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        SSD1306_GotoXY(0, 44);
+        sprintf(buff, "BLUE:  %d", blue_g);
+        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        SSD1306_UpdateScreen();
     }
 }
 
@@ -38,26 +47,44 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         BUTTON_TimerProcess();
         BUTTON_Process();
         if (BUTTON_GetAction(BUTTON_UP) == BUTTON_SHORT_PRESS) {
-            red_g += 20;
-            HAL_UART_Transmit_IT(&huart1, "red_g increased by 10\n\r", 20);
-        }
-        if (BUTTON_GetAction(BUTTON_UP) == BUTTON_VERY_LONG_PRESS) {
             red_g = 255;
-            green_g = 35;
-            blue_g = 150;
-            HAL_UART_Transmit_IT(&huart1, "red_g increased by 10\n\r", 20);
+            green_g = 0;
+            blue_g = 0;
+            ARGB_FillRGB(red_g, green_g, blue_g);
+            while (!ARGB_Show());
+            HAL_UART_Transmit_IT(&huart1, "RED\n\r", 20);
+        }
+        if (BUTTON_GetAction(BUTTON_UP) == BUTTON_LONG_PRESS) {
+            red_g = 0;
+            green_g = 0;
+            blue_g = 0;
+            ARGB_FillRGB(red_g, green_g, blue_g);
+            while (!ARGB_Show());
+            HAL_UART_Transmit_IT(&huart1, "CLEAR\n\r", 20);
         }
         if (BUTTON_GetAction(BUTTON_DOWN) == BUTTON_SHORT_PRESS) {
-            red_g -= 20;
-            HAL_UART_Transmit_IT(&huart1, "red_g reduced by 10\n\r", 20);
+            red_g = 0;
+            green_g = 255;
+            blue_g = 0;
+            ARGB_FillRGB(red_g, green_g, blue_g);
+            while (!ARGB_Show());
+            HAL_UART_Transmit_IT(&huart1, "GREEN\n\r", 20);
         }
         if (BUTTON_GetAction(BUTTON_LEFT) == BUTTON_SHORT_PRESS) {
-            green_g += 20;
-            HAL_UART_Transmit_IT(&huart1, "red_g increased by 10\n\r", 20);
+            red_g = 0;
+            green_g = 0;
+            blue_g = 255;
+            ARGB_FillRGB(red_g, green_g, blue_g);
+            while (!ARGB_Show());
+            HAL_UART_Transmit_IT(&huart1, "BLUE\n\r", 20);
         }
         if (BUTTON_GetAction(BUTTON_RIGHT) == BUTTON_SHORT_PRESS) {
-            green_g -= 20;
-            HAL_UART_Transmit_IT(&huart1, "red_g reduced by 10\n\r", 20);
+            red_g = 255;
+            green_g = 255;
+            blue_g = 255;
+            ARGB_FillRGB(red_g, green_g, blue_g);
+            while (!ARGB_Show());
+            HAL_UART_Transmit_IT(&huart1, "WHITE\n\r", 20);
         }
         BUTTON_ResetActions();
     }

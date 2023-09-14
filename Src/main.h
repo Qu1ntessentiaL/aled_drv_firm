@@ -15,6 +15,8 @@ extern "C" {
 #include "system.h"
 #include "ARGB/ARGB.h"
 #include "button/button.h"
+#include "ds18x20/OneWire.h"
+#include "ds18x20/ds18x20.h"
 
 #ifdef  USE_FULL_ASSERT
 void assert_failed(uint8_t *file, uint32_t line) {}

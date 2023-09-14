@@ -3,8 +3,6 @@
 
 #include "stm32f1xx.h"
 
-void Error_Handler(void);
-
 void SysCLK_DeInit(void);
 
 void SysCLK_Config(void);
@@ -22,5 +20,7 @@ void Encoder_Init(void);
 void ARGB_PreInit(void);
 
 void TIM2_Init(void);
+
+void OneWire_PreInit();
 
 #endif //PERIPH_H

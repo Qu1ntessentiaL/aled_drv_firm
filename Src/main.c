@@ -6,6 +6,8 @@ extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
 char buff[20];
+float temperature;
+uint8_t ROM_tmp[8];
 
 int main() {
     HAL_Init();
@@ -18,8 +20,19 @@ int main() {
     ARGB_PreInit();
     ARGB_Init();
     ARGB_SetBrightness(255);
+    OneWire_PreInit();
+    DS18B20_Init(DS18B20_Resolution_12bits);
     __enable_irq();
     while (1) {
+        DS18B20_ReadAll();
+        DS18B20_StartAll();
+        for (uint8_t i = 0; i < DS18B20_Quantity(); i++) {
+            if (DS18B20_GetTemperature(i, &temperature)) {
+                DS18B20_GetROM(i, ROM_tmp);
+            }
+        }
+        sprintf(buff, "%f", temperature);
+        HAL_UART_Transmit_IT(&huart1, buff, 10);
         SSD1306_Fill(SSD1306_COLOR_BLACK);
         SSD1306_GotoXY(0, 0);
         sprintf(buff, "RED:   %d", red_g);
@@ -43,6 +56,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 */
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    static uint16_t cnt = 0;
+    cnt++;
+    if (cnt == 1000) {
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        cnt = 0;
+    }
     if (htim->Instance == htim2.Instance) {
         BUTTON_TimerProcess();
         BUTTON_Process();

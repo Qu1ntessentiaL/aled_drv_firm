@@ -6,8 +6,9 @@ extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
 char buff[20];
+OneWire_t OneWireDat;
 float temperature;
-uint8_t ROM_tmp[8];
+uint8_t ROM_tmp;
 
 int main() {
     HAL_Init();
@@ -21,18 +22,8 @@ int main() {
     ARGB_Init();
     ARGB_SetBrightness(255);
     OneWire_PreInit();
-    DS18B20_Init(DS18B20_Resolution_12bits);
     __enable_irq();
     while (1) {
-        DS18B20_ReadAll();
-        DS18B20_StartAll();
-        for (uint8_t i = 0; i < DS18B20_Quantity(); i++) {
-            if (DS18B20_GetTemperature(i, &temperature)) {
-                DS18B20_GetROM(i, ROM_tmp);
-            }
-        }
-        sprintf(buff, "%f", temperature);
-        HAL_UART_Transmit_IT(&huart1, buff, 10);
         SSD1306_Fill(SSD1306_COLOR_BLACK);
         SSD1306_GotoXY(0, 0);
         sprintf(buff, "RED:   %d", red_g);
@@ -71,7 +62,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             blue_g = 0;
             ARGB_FillRGB(red_g, green_g, blue_g);
             while (!ARGB_Show());
-            HAL_UART_Transmit_IT(&huart1, "RED\n\r", 20);
+            HAL_UART_Transmit_IT(&huart1, "RED\n\r", 5);
         }
         if (BUTTON_GetAction(BUTTON_UP) == BUTTON_LONG_PRESS) {
             red_g = 0;
@@ -79,7 +70,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             blue_g = 0;
             ARGB_FillRGB(red_g, green_g, blue_g);
             while (!ARGB_Show());
-            HAL_UART_Transmit_IT(&huart1, "CLEAR\n\r", 20);
+            HAL_UART_Transmit_IT(&huart1, "CLEAR\n\r", 7);
         }
         if (BUTTON_GetAction(BUTTON_DOWN) == BUTTON_SHORT_PRESS) {
             red_g = 0;
@@ -87,7 +78,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             blue_g = 0;
             ARGB_FillRGB(red_g, green_g, blue_g);
             while (!ARGB_Show());
-            HAL_UART_Transmit_IT(&huart1, "GREEN\n\r", 20);
+            HAL_UART_Transmit_IT(&huart1, "GREEN\n\r", 7);
         }
         if (BUTTON_GetAction(BUTTON_LEFT) == BUTTON_SHORT_PRESS) {
             red_g = 0;
@@ -95,7 +86,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             blue_g = 255;
             ARGB_FillRGB(red_g, green_g, blue_g);
             while (!ARGB_Show());
-            HAL_UART_Transmit_IT(&huart1, "BLUE\n\r", 20);
+            HAL_UART_Transmit_IT(&huart1, "BLUE\n\r", 6);
         }
         if (BUTTON_GetAction(BUTTON_RIGHT) == BUTTON_SHORT_PRESS) {
             red_g = 255;
@@ -103,7 +94,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             blue_g = 255;
             ARGB_FillRGB(red_g, green_g, blue_g);
             while (!ARGB_Show());
-            HAL_UART_Transmit_IT(&huart1, "WHITE\n\r", 20);
+            HAL_UART_Transmit_IT(&huart1, "WHITE\n\r", 7);
         }
         BUTTON_ResetActions();
     }

@@ -1,5 +1,5 @@
-#ifndef PERIPH_H
-#define PERIPH_H
+#ifndef SYSTEM_H
+#define SYSTEM_H
 
 #include "stm32f1xx.h"
 
@@ -23,4 +23,4 @@ void TIM2_Init(void);
 
 void OneWire_PreInit();
 
-#endif //PERIPH_H
+#endif //SYSTEM_H

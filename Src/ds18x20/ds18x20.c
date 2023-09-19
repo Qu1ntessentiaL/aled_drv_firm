@@ -1,522 +1,221 @@
 #include "ds18x20.h"
+#include "OneWire.h"
 
-Ds18b20Sensor_t ds18b20[DS18B20_MAX_SENSORS];
+// ROM commands
+static DS18B20_Command_t readRom = {.code = 0x33, .rxBytesNum = 8, .txBytesNum = 0};
+static DS18B20_Command_t skipRom = {.code = 0xCC, .rxBytesNum = 0, .txBytesNum = 0};
 
-OneWire_t OneWire;
-uint8_t OneWireDevices;
-uint8_t TempSensorCount = 0;
-uint8_t Ds18b20StartConvert = 0;
-uint16_t Ds18b20Timeout = 0;
-#if (DS18B20_USE_FREERTOS == 1)
-osThreadId Ds18b20Handle;
+// Function commands
+static DS18B20_Command_t readScratchpad = {.code = 0xBE, .rxBytesNum = 9, .txBytesNum = 0};
+static DS18B20_Command_t writeScratchpad = {.code = 0x4E, .rxBytesNum = 0, .txBytesNum = 3};
+static DS18B20_Command_t convertT = {.code = 0x44, .rxBytesNum = 0, .txBytesNum = 0};
 
-void Task_Ds18b20(void const *argument);
+static uint8_t CalculateChecksum(uint8_t *data, uint8_t length) {
+    uint8_t checksum = 0;
 
-#endif
+    while (length--) {
+        uint8_t currentByte = *data++;
 
-#if (DS18B20_USE_FREERTOS == 1)
+        for (uint8_t i = 8; i; i--) {
+            uint8_t temp = (checksum ^ currentByte) & 0x01;
+            checksum >>= 1;
 
-void DS18B20_Init(osPriority Priority) {
-    osThreadDef(myTask_Ds18b20, Task_Ds18b20, Priority, 0, 128);
-    Ds18b20Handle = osThreadCreate(osThread(myTask_Ds18b20), NULL);
-}
+            if (temp) {
+                checksum ^= 0x8C;
+            }
 
-#else
-
-bool DS18B20_Init(void) {
-    uint8_t Ds18b20TryToFind = 5;
-    do {
-        OneWire_Init(&OneWire, DS18B20_PORT, DS18B20_PIN);
-        TempSensorCount = 0;
-        while (HAL_GetTick() < 3000)
-            Ds18b20Delay(100);
-        OneWireDevices = OneWire_First(&OneWire);
-        while (OneWireDevices) {
-            Ds18b20Delay(100);
-            TempSensorCount++;
-            OneWire_GetFullROM(&OneWire, ds18b20[TempSensorCount - 1].Address);
-            OneWireDevices = OneWire_Next(&OneWire);
+            currentByte >>= 1;
         }
-        if (TempSensorCount > 0)
-            break;
-        Ds18b20TryToFind--;
-    } while (Ds18b20TryToFind > 0);
-    if (Ds18b20TryToFind == 0)
-        return false;
-    for (uint8_t i = 0; i < TempSensorCount; i++) {
-        Ds18b20Delay(50);
-        DS18B20_SetResolution(&OneWire, ds18b20[i].Address, DS18B20_Resolution_12bits);
-        Ds18b20Delay(50);
-        DS18B20_DisableAlarmTemperature(&OneWire, ds18b20[i].Address);
     }
-    return true;
+
+    return checksum;
 }
 
-#endif
-
-bool DS18B20_ManualConvert(void) {
-#if (DS18B20_USE_FREERTOS == 1)
-    Ds18b20StartConvert = 1;
-    while (Ds18b20StartConvert == 1)
-        Ds18b20Delay(10);
-    if (Ds18b20Timeout == 0)
-        return false;
-    else
-        return true;
-#else
-    Ds18b20Timeout = DS18B20_CONVERT_TIMEOUT_MS / 10;
-    DS18B20_StartAll(&OneWire);
-    Ds18b20Delay(100);
-    while (!DS18B20_AllDone(&OneWire)) {
-        Ds18b20Delay(10);
-        Ds18b20Timeout -= 1;
-        if (Ds18b20Timeout == 0)
-            break;
+static DS18B20_Status ExecuteCommand(DS18B20_t *sensor, DS18B20_Command_t command, uint8_t *data) {
+    if (sensor->isConnected == 0) {
+        return DS18B20_ERROR;
     }
-    if (Ds18b20Timeout > 0) {
-        for (uint8_t i = 0; i < TempSensorCount; i++) {
-            Ds18b20Delay(100);
-            ds18b20[i].DataIsValid = DS18B20_Read(&OneWire, ds18b20[i].Address, &ds18b20[i].Temperature);
+
+    OneWire_ProcessByte(sensor->uart, command.code);
+
+    if (command.rxBytesNum != 0) {
+        for (uint8_t i = 0; i < command.rxBytesNum; i++) {
+            data[i] = OneWire_ProcessByte(sensor->uart, 0xFF);
+        }
+
+        uint8_t checkSum = CalculateChecksum(data, command.rxBytesNum - 1);
+        if (checkSum != data[command.rxBytesNum - 1]) {
+            return DS18B20_ERROR;
         }
     } else {
-        for (uint8_t i = 0; i < TempSensorCount; i++)
-            ds18b20[i].DataIsValid = false;
+        for (uint8_t i = 0; i < command.txBytesNum; i++) {
+            OneWire_ProcessByte(sensor->uart, data[i]);
+        }
     }
-    if (Ds18b20Timeout == 0)
-        return false;
-    else
-        return true;
-#endif
+
+    return DS18B20_OK;
 }
 
-#if (DS18B20_USE_FREERTOS == 1)
-
-void Task_Ds18b20(void const *argument) {
-    uint8_t Ds18b20TryToFind = 5;
-    do {
-        OneWire_Init(&OneWire, DS18B20_PORT, DS18B20_PIN);
-        TempSensorCount = 0;
-        while (HAL_GetTick() < 3000)
-            Ds18b20Delay(100);
-        OneWireDevices = OneWire_First(&OneWire);
-        while (OneWireDevices) {
-            Ds18b20Delay(100);
-            TempSensorCount++;
-            OneWire_GetFullROM(&OneWire, ds18b20[TempSensorCount - 1].Address);
-            OneWireDevices = OneWire_Next(&OneWire);
-        }
-        if (TempSensorCount > 0)
-            break;
-        Ds18b20TryToFind--;
-    } while (Ds18b20TryToFind > 0);
-    if (Ds18b20TryToFind == 0)
-        vTaskDelete(Ds18b20Handle);
-    for (uint8_t i = 0; i < TempSensorCount; i++) {
-        Ds18b20Delay(50);
-        DS18B20_SetResolution(&OneWire, ds18b20[i].Address, DS18B20_Resolution_12bits);
-        Ds18b20Delay(50);
-        DS18B20_DisableAlarmTemperature(&OneWire, ds18b20[i].Address);
+static void WaitForConversionFinished(DS18B20_t *sensor) {
+    uint8_t data = OneWire_ProcessBit(sensor->uart, 1);
+    while (data != 0xFF) {
+        data = OneWire_ProcessBit(sensor->uart, 1);
     }
-    for (;;) {
-        while (DS18B20_UPDATE_INTERVAL_MS == 0) {
-            if (Ds18b20StartConvert == 1)
+}
+
+DS18B20_Status DS18B20_ConvertT(DS18B20_t *sensor, DS18B20_WaitCondition waitCondition) {
+    DS18B20_Status result;
+    uint8_t rxDummyData;
+
+    result = ExecuteCommand(sensor, convertT, &rxDummyData);
+
+    if (waitCondition == DS18B20_DATA) {
+        WaitForConversionFinished(sensor);
+    }
+
+    if (waitCondition == DS18B20_DELAY) {
+        uint32_t delayValueMs = 0;
+
+        switch (sensor->configRegister) {
+            case DS18B20_9_BITS_CONFIG:
+                delayValueMs = DS18B20_9_BITS_DELAY_MS;
                 break;
-            Ds18b20Delay(10);
-        }
-        Ds18b20Timeout = DS18B20_CONVERT_TIMEOUT_MS / 10;
-        DS18B20_StartAll(&OneWire);
-        osDelay(100);
-        while (!DS18B20_AllDone(&OneWire)) {
-            osDelay(10);
-            Ds18b20Timeout -= 1;
-            if (Ds18b20Timeout == 0)
+
+            case DS18B20_10_BITS_CONFIG:
+                delayValueMs = DS18B20_10_BITS_DELAY_MS;
+                break;
+
+            case DS18B20_11_BITS_CONFIG:
+                delayValueMs = DS18B20_11_BITS_DELAY_MS;
+                break;
+
+            case DS18B20_12_BITS_CONFIG:
+                delayValueMs = DS18B20_12_BITS_DELAY_MS;
+                break;
+
+            default:
                 break;
         }
-        if (Ds18b20Timeout > 0) {
-            for (uint8_t i = 0; i < TempSensorCount; i++) {
-                Ds18b20Delay(1000);
-                ds18b20[i].DataIsValid = DS18B20_Read(&OneWire, ds18b20[i].Address, &ds18b20[i].Temperature);
-            }
-        } else {
-            for (uint8_t i = 0; i < TempSensorCount; i++)
-                ds18b20[i].DataIsValid = false;
-        }
-        Ds18b20StartConvert = 0;
-        osDelay(DS18B20_UPDATE_INTERVAL_MS);
+
+        HAL_Delay(delayValueMs);
     }
+
+    return result;
 }
 
-#endif
+DS18B20_Status DS18B20_ReadScratchpad(DS18B20_t *sensor) {
+    DS18B20_Status result;
+    uint8_t rxData[DS18B20_READ_SCRATCHPAD_RX_BYTES_NUM];
+    result = ExecuteCommand(sensor, readScratchpad, rxData);
 
-uint8_t DS18B20_Start(OneWire_t *OneWire, uint8_t *ROM) {
-    /* Check if device is DS18B20 */
-    if (!DS18B20_Is(ROM)) {
-        return 0;
+    if (result != DS18B20_OK) {
+        return result;
     }
 
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Start temperature conversion */
-    OneWire_WriteByte(OneWire, DS18B20_CMD_CONVERTTEMP);
+    sensor->temperatureLimitHigh = rxData[DS18B20_SCRATCHPAD_T_LIMIT_H_BYTE_IDX];
+    sensor->temperatureLimitLow = rxData[DS18B20_SCRATCHPAD_T_LIMIT_L_BYTE_IDX];
+    sensor->configRegister = rxData[DS18B20_SCRATCHPAD_CONFIG_BYTE_IDX];
 
-    return 1;
-}
+    uint16_t tRegValue = (rxData[DS18B20_SCRATCHPAD_T_MSB_BYTE_IDX] << 8) | rxData[DS18B20_SCRATCHPAD_T_LSB_BYTE_IDX];
+    uint16_t sign = tRegValue & DS18B20_SIGN_MASK;
 
-void DS18B20_StartAll(OneWire_t *OneWire) {
-    /* Reset pulse */
-    OneWire_Reset(OneWire);
-    /* Skip rom */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_SKIPROM);
-    /* Start conversion on all connected devices */
-    OneWire_WriteByte(OneWire, DS18B20_CMD_CONVERTTEMP);
-}
-
-bool DS18B20_Read(OneWire_t *OneWire, uint8_t *ROM, float *destination) {
-    uint16_t temperature;
-    uint8_t resolution;
-    int8_t digit, minus = 0;
-    float decimal;
-    uint8_t i = 0;
-    uint8_t data[9];
-    uint8_t crc;
-
-    /* Check if device is DS18B20 */
-    if (!DS18B20_Is(ROM)) {
-        return false;
+    if (sign != 0) {
+        tRegValue = (0xFFFF - tRegValue + 1);
     }
 
-    /* Check if line is released, if it is, then conversion is complete */
-    if (!OneWire_ReadBit(OneWire)) {
-        /* Conversion is not finished yet */
-        return false;
-    }
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Read scratchpad command by onewire protocol */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_RSCRATCHPAD);
-
-    /* Get data */
-    for (i = 0; i < 9; i++) {
-        /* Read byte by byte */
-        data[i] = OneWire_ReadByte(OneWire);
-    }
-
-    /* Calculate CRC */
-    crc = OneWire_CRC8(data, 8);
-
-    /* Check if CRC is ok */
-    if (crc != data[8])
-        /* CRC invalid */
-        return 0;
-
-
-    /* First two bytes of scratchpad are temperature values */
-    temperature = data[0] | (data[1] << 8);
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-
-    /* Check if temperature is negative */
-    if (temperature & 0x8000) {
-        /* Two's complement, temperature is negative */
-        temperature = ~temperature + 1;
-        minus = 1;
-    }
-
-
-    /* Get sensor resolution */
-    resolution = ((data[4] & 0x60) >> 5) + 9;
-
-
-    /* Store temperature integer digits and decimal digits */
-    digit = temperature >> 4;
-    digit |= ((temperature >> 8) & 0x7) << 4;
-
-    /* Store decimal digits */
-    switch (resolution) {
-        case 9:
-            decimal = (temperature >> 3) & 0x01;
-            decimal *= (float) DS18B20_DECIMAL_STEPS_9BIT;
+    switch (sensor->configRegister) {
+        case DS18B20_9_BITS_CONFIG:
+            tRegValue &= DS18B20_9_BITS_DATA_MASK;
             break;
-        case 10:
-            decimal = (temperature >> 2) & 0x03;
-            decimal *= (float) DS18B20_DECIMAL_STEPS_10BIT;
+
+        case DS18B20_10_BITS_CONFIG:
+            tRegValue &= DS18B20_10_BITS_DATA_MASK;
             break;
-        case 11:
-            decimal = (temperature >> 1) & 0x07;
-            decimal *= (float) DS18B20_DECIMAL_STEPS_11BIT;
+
+        case DS18B20_11_BITS_CONFIG:
+            tRegValue &= DS18B20_11_BITS_DATA_MASK;
             break;
-        case 12:
-            decimal = temperature & 0x0F;
-            decimal *= (float) DS18B20_DECIMAL_STEPS_12BIT;
+
+        case DS18B20_12_BITS_CONFIG:
+            tRegValue &= DS18B20_12_BITS_DATA_MASK;
             break;
+
         default:
-            decimal = 0xFF;
-            digit = 0;
+            tRegValue &= DS18B20_12_BITS_DATA_MASK;
+            break;
     }
 
-    /* Check for negative part */
-    decimal = digit + decimal;
-    if (minus)
-        decimal = 0 - decimal;
+    sensor->temperature = (float) tRegValue * DS18B20_T_STEP;
 
-
-    /* Set to pointer */
-    *destination = decimal;
-
-    /* Return 1, temperature valid */
-    return true;
-}
-
-uint8_t DS18B20_GetResolution(OneWire_t *OneWire, uint8_t *ROM) {
-    uint8_t conf;
-
-    if (!DS18B20_Is(ROM))
-        return 0;
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Read scratchpad command by onewire protocol */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_RSCRATCHPAD);
-
-    /* Ignore first 4 bytes */
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-
-    /* 5th byte of scratchpad is configuration register */
-    conf = OneWire_ReadByte(OneWire);
-
-    /* Return 9 - 12 value according to number of bits */
-    return ((conf & 0x60) >> 5) + 9;
-}
-
-uint8_t DS18B20_SetResolution(OneWire_t *OneWire, uint8_t *ROM, DS18B20_Resolution_t resolution) {
-    uint8_t th, tl, conf;
-    if (!DS18B20_Is(ROM))
-        return 0;
-
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Read scratchpad command by onewire protocol */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_RSCRATCHPAD);
-
-    /* Ignore first 2 bytes */
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-
-    th = OneWire_ReadByte(OneWire);
-    tl = OneWire_ReadByte(OneWire);
-    conf = OneWire_ReadByte(OneWire);
-
-    if (resolution == DS18B20_Resolution_9bits) {
-        conf &= ~(1 << DS18B20_RESOLUTION_R1);
-        conf &= ~(1 << DS18B20_RESOLUTION_R0);
-    } else if (resolution == DS18B20_Resolution_10bits) {
-        conf &= ~(1 << DS18B20_RESOLUTION_R1);
-        conf |= 1 << DS18B20_RESOLUTION_R0;
-    } else if (resolution == DS18B20_Resolution_11bits) {
-        conf |= 1 << DS18B20_RESOLUTION_R1;
-        conf &= ~(1 << DS18B20_RESOLUTION_R0);
-    } else if (resolution == DS18B20_Resolution_12bits) {
-        conf |= 1 << DS18B20_RESOLUTION_R1;
-        conf |= 1 << DS18B20_RESOLUTION_R0;
+    if (sign != 0) {
+        sensor->temperature *= (-1);
     }
 
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Write scratchpad command by onewire protocol, only th, tl and conf register can be written */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_WSCRATCHPAD);
-
-    /* Write bytes */
-    OneWire_WriteByte(OneWire, th);
-    OneWire_WriteByte(OneWire, tl);
-    OneWire_WriteByte(OneWire, conf);
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Copy scratchpad to EEPROM of DS18B20 */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_CPYSCRATCHPAD);
-
-    return 1;
+    return DS18B20_OK;
 }
 
-uint8_t DS18B20_Is(uint8_t *ROM) {
-    /* Checks if first byte is equal to DS18B20's family code */
-    if (*ROM == DS18B20_FAMILY_CODE)
-        return 1;
+DS18B20_Status DS18B20_WriteScratchpad(DS18B20_t *sensor, uint8_t *data) {
+    DS18B20_Status result;
 
-    return 0;
+    result = ExecuteCommand(sensor, writeScratchpad, data);
+
+    if (result != DS18B20_OK) {
+        return result;
+    }
+
+    sensor->temperatureLimitHigh = data[0];
+    sensor->temperatureLimitLow = data[1];
+    sensor->configRegister = data[2];
+
+    return result;
 }
 
-uint8_t DS18B20_SetAlarmLowTemperature(OneWire_t *OneWire, uint8_t *ROM, int8_t temp) {
-    uint8_t tl, th, conf;
-    if (!DS18B20_Is(ROM))
-        return 0;
+DS18B20_Status DS18B20_InitializationCommand(DS18B20_t *sensor) {
+    if (sensor->isInitialized == 0) {
+        return DS18B20_ERROR;
+    }
 
-    if (temp > 125)
-        temp = 125;
+    ONEWIRE_Status status = OneWire_Reset(sensor->uart);
 
-    if (temp < -55)
-        temp = -55;
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Read scratchpad command by onewire protocol */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_RSCRATCHPAD);
-
-    /* Ignore first 2 bytes */
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-
-    th = OneWire_ReadByte(OneWire);
-    tl = OneWire_ReadByte(OneWire);
-    conf = OneWire_ReadByte(OneWire);
-
-    tl = (uint8_t) temp;
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Write scratchpad command by onewire protocol, only th, tl and conf register can be written */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_WSCRATCHPAD);
-
-    /* Write bytes */
-    OneWire_WriteByte(OneWire, th);
-    OneWire_WriteByte(OneWire, tl);
-    OneWire_WriteByte(OneWire, conf);
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Copy scratchpad to EEPROM of DS18B20 */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_CPYSCRATCHPAD);
-
-    return 1;
+    if (status == ONEWIRE_OK) {
+        sensor->isConnected = 1;
+        return DS18B20_OK;
+    } else {
+        sensor->isConnected = 0;
+        return DS18B20_ERROR;
+    }
 }
 
-uint8_t DS18B20_SetAlarmHighTemperature(OneWire_t *OneWire, uint8_t *ROM, int8_t temp) {
-    uint8_t tl, th, conf;
-    if (!DS18B20_Is(ROM))
-        return 0;
+DS18B20_Status DS18B20_ReadRom(DS18B20_t *sensor) {
+    DS18B20_Status result;
+    uint8_t rxData[DS18B20_READ_ROM_RX_BYTES_NUM];
+    result = ExecuteCommand(sensor, readRom, rxData);
 
-    if (temp > 125)
-        temp = 125;
+    if (result != DS18B20_OK) {
+        return result;
+    }
 
-    if (temp < -55)
-        temp = -55;
+    for (uint8_t i = 0; i < DS18B20_SERIAL_NUMBER_LEN_BYTES; i++) {
+        sensor->serialNumber[i] = rxData[DS18B20_SERIAL_NUMBER_OFFSET_BYTES + i];
+    }
 
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Read scratchpad command by onewire protocol */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_RSCRATCHPAD);
-
-    /* Ignore first 2 bytes */
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-
-    th = OneWire_ReadByte(OneWire);
-    tl = OneWire_ReadByte(OneWire);
-    conf = OneWire_ReadByte(OneWire);
-
-    th = (uint8_t) temp;
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Write scratchpad command by onewire protocol, only th, tl and conf register can be written */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_WSCRATCHPAD);
-
-    /* Write bytes */
-    OneWire_WriteByte(OneWire, th);
-    OneWire_WriteByte(OneWire, tl);
-    OneWire_WriteByte(OneWire, conf);
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Copy scratchpad to EEPROM of DS18B20 */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_CPYSCRATCHPAD);
-
-    return 1;
+    return DS18B20_OK;
 }
 
-uint8_t DS18B20_DisableAlarmTemperature(OneWire_t *OneWire, uint8_t *ROM) {
-    uint8_t tl, th, conf;
-    if (!DS18B20_Is(ROM))
-        return 0;
+DS18B20_Status DS18B20_SkipRom(DS18B20_t *sensor) {
+    DS18B20_Status result;
+    uint8_t rxDummyData;
+    result = ExecuteCommand(sensor, skipRom, &rxDummyData);
 
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Read scratchpad command by onewire protocol */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_RSCRATCHPAD);
+    if (result != DS18B20_OK) {
+        return result;
+    }
 
-    /* Ignore first 2 bytes */
-    OneWire_ReadByte(OneWire);
-    OneWire_ReadByte(OneWire);
-
-    th = OneWire_ReadByte(OneWire);
-    tl = OneWire_ReadByte(OneWire);
-    conf = OneWire_ReadByte(OneWire);
-
-    th = 125;
-    tl = (uint8_t) -55;
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Write scratchpad command by onewire protocol, only th, tl and conf register can be written */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_WSCRATCHPAD);
-
-    /* Write bytes */
-    OneWire_WriteByte(OneWire, th);
-    OneWire_WriteByte(OneWire, tl);
-    OneWire_WriteByte(OneWire, conf);
-
-    /* Reset line */
-    OneWire_Reset(OneWire);
-    /* Select ROM number */
-    OneWire_SelectWithPointer(OneWire, ROM);
-    /* Copy scratchpad to EEPROM of DS18B20 */
-    OneWire_WriteByte(OneWire, ONEWIRE_CMD_CPYSCRATCHPAD);
-
-    return 1;
+    return DS18B20_OK;
 }
 
-uint8_t DS18B20_AlarmSearch(OneWire_t *OneWire) {
-    /* Start alarm search */
-    return OneWire_Search(OneWire, DS18B20_CMD_ALARMSEARCH);
+void DS18B20_Init(DS18B20_t *sensor, UART_HandleTypeDef *huart) {
+    sensor->isConnected = 0;
+    sensor->uart = huart;
+    sensor->isInitialized = 1;
 }
-
-uint8_t DS18B20_AllDone(OneWire_t *OneWire) {
-    /* If read bit is low, then device is not finished yet with calculation temperature */
-    return OneWire_ReadBit(OneWire);
-}
-
-

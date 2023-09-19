@@ -1,14 +1,12 @@
 #include "main.h"
 
 extern I2C_HandleTypeDef hi2c1;
-extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart1, huart2;
 extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
 char buff[20];
-OneWire_t OneWireDat;
-float temperature;
-uint8_t ROM_tmp;
+DS18B20_t DS18B20_Struct;
 
 int main() {
     HAL_Init();
@@ -21,9 +19,33 @@ int main() {
     ARGB_PreInit();
     ARGB_Init();
     ARGB_SetBrightness(255);
-    OneWire_PreInit();
     __enable_irq();
+    UART2_Init();
+    DS18B20_Init(&DS18B20_Struct, &huart2);
+
+    DS18B20_InitializationCommand(&DS18B20_Struct);
+    DS18B20_ReadRom(&DS18B20_Struct);
+    DS18B20_ReadScratchpad(&DS18B20_Struct);
+
+    uint8_t settings[3];
+    settings[0] = DS18B20_Struct.temperatureLimitHigh;
+    settings[1] = DS18B20_Struct.temperatureLimitLow;
+    settings[2] = DS18B20_12_BITS_CONFIG;
+
+    DS18B20_InitializationCommand(&DS18B20_Struct);
+    DS18B20_SkipRom(&DS18B20_Struct);
+    DS18B20_WriteScratchpad(&DS18B20_Struct, settings);
     while (1) {
+        DS18B20_InitializationCommand(&DS18B20_Struct);
+        DS18B20_SkipRom(&DS18B20_Struct);
+        DS18B20_ConvertT(&DS18B20_Struct, DS18B20_DATA);
+
+        DS18B20_InitializationCommand(&DS18B20_Struct);
+        DS18B20_SkipRom(&DS18B20_Struct);
+        DS18B20_ReadScratchpad(&DS18B20_Struct);
+
+        HAL_UART_Transmit_IT(&huart1, DS18B20_Struct.serialNumber, 1);
+
         SSD1306_Fill(SSD1306_COLOR_BLACK);
         SSD1306_GotoXY(0, 0);
         sprintf(buff, "RED:   %d", red_g);

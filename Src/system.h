@@ -15,6 +15,8 @@ void I2C1_Init(void);
 
 void UART1_Init(void);
 
+void UART2_Init(void);
+
 void Encoder_Init(void);
 
 void ARGB_PreInit(void);

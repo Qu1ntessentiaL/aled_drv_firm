@@ -2,90 +2,78 @@
 #define DS18X20_H
 
 #include "stm32f1xx.h"
-#include "OneWire.h"
-#include "ds18x20_cfg.h"
 #include <stdbool.h>
 
-#if (DS18B20_USE_FREERTOS == 1)
+#define DS18B20_SERIAL_NUMBER_LEN_BYTES                                     6
+#define DS18B20_SERIAL_NUMBER_OFFSET_BYTES                                  1
 
-#include "cmsis_os.h"
+#define DS18B20_SCRATCHPAD_T_LSB_BYTE_IDX                                   0
+#define DS18B20_SCRATCHPAD_T_MSB_BYTE_IDX                                   1
+#define DS18B20_SCRATCHPAD_T_LIMIT_H_BYTE_IDX                               2
+#define DS18B20_SCRATCHPAD_T_LIMIT_L_BYTE_IDX                               3
+#define DS18B20_SCRATCHPAD_CONFIG_BYTE_IDX                                  4
 
-#define Ds18b20Delay(x) osDelay(x)
-#else
-#define Ds18b20Delay(x) HAL_Delay(x)
-#endif
+#define DS18B20_9_BITS_CONFIG                                               0x1F
+#define DS18B20_10_BITS_CONFIG                                              0x3F
+#define DS18B20_11_BITS_CONFIG                                              0x5F
+#define DS18B20_12_BITS_CONFIG                                              0x7F
 
-typedef struct {
-    uint8_t Address[8];
-    float Temperature;
-    bool DataIsValid;
-} Ds18b20Sensor_t;
+#define DS18B20_9_BITS_DELAY_MS                                             94
+#define DS18B20_10_BITS_DELAY_MS                                            188
+#define DS18B20_11_BITS_DELAY_MS                                            375
+#define DS18B20_12_BITS_DELAY_MS                                            750
 
-extern Ds18b20Sensor_t ds18b20[DS18B20_MAX_SENSORS];
+#define DS18B20_9_BITS_DATA_MASK                                            0x7F8
+#define DS18B20_10_BITS_DATA_MASK                                           0x7FC
+#define DS18B20_11_BITS_DATA_MASK                                           0x7FE
+#define DS18B20_12_BITS_DATA_MASK                                           0x7FF
 
-/* Every onewire chip has different ROM code, but all the same chips has same family code */
-/* in case of DS18B20 this is 0x28 and this is first byte of ROM address */
-#define DS18B20_FAMILY_CODE     0x28
-#define DS18B20_CMD_ALARMSEARCH 0xEC
+#define DS18B20_SIGN_MASK                                                   0xF800
 
-/* DS18B20 read temperature command */
-#define DS18B20_CMD_CONVERTTEMP     0x44    /* Convert temperature */
-#define DS18B20_DECIMAL_STEPS_12BIT 0.0625
-#define DS18B20_DECIMAL_STEPS_11BIT 0.125
-#define DS18B20_DECIMAL_STEPS_10BIT 0.25
-#define DS18B20_DECIMAL_STEPS_9BIT  0.5
+#define DS18B20_T_STEP                                                      0.0625
+#define DS18B20_READ_ROM_RX_BYTES_NUM                                       8
+#define DS18B20_READ_SCRATCHPAD_RX_BYTES_NUM                                9
 
-/* Bits locations for resolution */
-#define DS18B20_RESOLUTION_R1 6
-#define DS18B20_RESOLUTION_R0 5
+typedef struct DS18B20 {
+    uint8_t isInitialized;
+    uint8_t isConnected;
+    UART_HandleTypeDef *uart;
+    uint8_t serialNumber[DS18B20_SERIAL_NUMBER_LEN_BYTES];
+    uint8_t temperatureLimitLow;
+    uint8_t temperatureLimitHigh;
+    uint8_t configRegister;
+    float temperature;
+} DS18B20_t;
 
-/* CRC enabled */
-#ifdef DS18B20_USE_CRC
-#define DS18B20_DATA_LEN 9
-#else
-#define DS18B20_DATA_LEN 2
-#endif
+typedef struct DS18B20_Command {
+    uint8_t code;
+    uint8_t rxBytesNum;
+    uint8_t txBytesNum;
+} DS18B20_Command_t;
 
 typedef enum {
-    DS18B20_Resolution_9bits = 9,   /*!< DS18B20 9 bits resolution */
-    DS18B20_Resolution_10bits = 10, /*!< DS18B20 10 bits resolution */
-    DS18B20_Resolution_11bits = 11, /*!< DS18B20 11 bits resolution */
-    DS18B20_Resolution_12bits = 12  /*!< DS18B20 12 bits resolution */
-} DS18B20_Resolution_t;
+    DS18B20_OK = 0x00,
+    DS18B20_ERROR = 0x01,
+} DS18B20_Status;
 
-#if (DS18B20_USE_FREERTOS == 1)
+typedef enum {
+    DS18B20_NONE = 0x00,
+    DS18B20_DATA = 0x01,
+    DS18B20_DELAY = 0x02,
+} DS18B20_WaitCondition;
 
-void DS18B20_Init(osPriority Priority);
+extern DS18B20_Status DS18B20_ConvertT(DS18B20_t *sensor, DS18B20_WaitCondition waitCondition);
 
-#else
+extern DS18B20_Status DS18B20_ReadScratchpad(DS18B20_t *sensor);
 
-bool DS18B20_Init(void);
+extern DS18B20_Status DS18B20_WriteScratchpad(DS18B20_t *sensor, uint8_t *data);
 
-#endif
+extern DS18B20_Status DS18B20_InitializationCommand(DS18B20_t *sensor);
 
-bool DS18B20_ManualConvert(void);
+extern DS18B20_Status DS18B20_ReadRom(DS18B20_t *sensor);
 
-uint8_t DS18B20_Start(OneWire_t *OneWireStruct, uint8_t *ROM);
+extern DS18B20_Status DS18B20_SkipRom(DS18B20_t *sensor);
 
-void DS18B20_StartAll(OneWire_t *OneWireStruct);
-
-bool DS18B20_Read(OneWire_t *OneWireStruct, uint8_t *ROM, float *destination);
-
-uint8_t DS18B20_GetResolution(OneWire_t *OneWireStruct, uint8_t *ROM);
-
-uint8_t DS18B20_SetResolution(OneWire_t *OneWireStruct, uint8_t *ROM, DS18B20_Resolution_t resolution);
-
-uint8_t DS18B20_Is(uint8_t *ROM);
-
-uint8_t DS18B20_SetAlarmHighTemperature(OneWire_t *OneWireStruct, uint8_t *ROM, int8_t temp);
-
-uint8_t DS18B20_SetAlarmLowTemperature(OneWire_t *OneWireStruct, uint8_t *ROM, int8_t temp);
-
-uint8_t DS18B20_DisableAlarmTemperature(OneWire_t *OneWireStruct, uint8_t *ROM);
-
-uint8_t DS18B20_AlarmSearch(OneWire_t *OneWireStruct);
-
-uint8_t DS18B20_AllDone(OneWire_t *OneWireStruct);
+extern void DS18B20_Init(DS18B20_t *sensor, UART_HandleTypeDef *huart);
 
 #endif //DS18X20_H
-

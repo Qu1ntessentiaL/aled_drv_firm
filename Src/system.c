@@ -1,7 +1,7 @@
 #include "system.h"
 
 I2C_HandleTypeDef hi2c1;
-UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart1, huart2;
 TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 DMA_HandleTypeDef hdma_tim4_ch3;
 
@@ -168,6 +168,31 @@ void UART1_Init() {
 
     HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
+}
+
+void UART2_Init(void) {
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = GPIO_PIN_2;           //PA2 = USART2_TX
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    __HAL_RCC_USART2_CLK_ENABLE();
+
+    huart2.Instance = USART2;
+    huart2.Init.BaudRate = 115200;
+    huart2.Init.WordLength = UART_WORDLENGTH_8B;
+    huart2.Init.StopBits = UART_STOPBITS_1;
+    huart2.Init.Parity = UART_PARITY_NONE;
+    huart2.Init.Mode = UART_MODE_TX_RX;
+    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_HalfDuplex_Init(&huart2) != HAL_OK) {
+        Error_Handler();
+    }
 }
 
 void Encoder_Init(void) {

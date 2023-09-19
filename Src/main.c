@@ -5,13 +5,14 @@ extern UART_HandleTypeDef huart1, huart2;
 extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
-char buff[20];
+char buff[20], uart_buff[40];
 DS18B20_t DS18B20_Struct;
 
 int main() {
     HAL_Init();
     SystemClock_Config();
     UART1_Init();
+    __enable_irq();
     SSD1306_Init();
     PC13_Init();
     TIM2_Init();
@@ -19,12 +20,12 @@ int main() {
     ARGB_PreInit();
     ARGB_Init();
     ARGB_SetBrightness(255);
-    __enable_irq();
     UART2_Init();
     DS18B20_Init(&DS18B20_Struct, &huart2);
 
     DS18B20_InitializationCommand(&DS18B20_Struct);
-    DS18B20_ReadRom(&DS18B20_Struct);
+    if (~DS18B20_ReadRom(&DS18B20_Struct))
+        HAL_UART_Transmit_IT(&huart1, "ReadROM complete!\n\r", 19);
     DS18B20_ReadScratchpad(&DS18B20_Struct);
 
     uint8_t settings[3];
@@ -44,11 +45,20 @@ int main() {
         DS18B20_SkipRom(&DS18B20_Struct);
         DS18B20_ReadScratchpad(&DS18B20_Struct);
 
-        HAL_UART_Transmit_IT(&huart1, DS18B20_Struct.serialNumber, 1);
+        sprintf(uart_buff, "S/N: %02X %02X %02X %02X %02X %02X; t = %.2f\n\r",
+                DS18B20_Struct.serialNumber[0],
+                DS18B20_Struct.serialNumber[1],
+                DS18B20_Struct.serialNumber[2],
+                DS18B20_Struct.serialNumber[3],
+                DS18B20_Struct.serialNumber[4],
+                DS18B20_Struct.serialNumber[5],
+                DS18B20_Struct.temperature);
+
+        HAL_UART_Transmit_IT(&huart1, uart_buff, 35);
 
         SSD1306_Fill(SSD1306_COLOR_BLACK);
         SSD1306_GotoXY(0, 0);
-        sprintf(buff, "RED:   %d", red_g);
+        sprintf(buff, "t = %.2f", DS18B20_Struct.temperature);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
         SSD1306_GotoXY(0, 22);
         sprintf(buff, "GREEN: %d", green_g);

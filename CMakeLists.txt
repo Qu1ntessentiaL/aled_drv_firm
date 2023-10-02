@@ -32,6 +32,7 @@ include_directories(
         Src/ssd1306/
         Src/button/
         Src/ds18x20/
+        Src/at24cxx/
 )
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
@@ -49,7 +50,8 @@ file(GLOB_RECURSE SOURCES
         Src/button/button.c
         Src/ds18x20/ds18x20.c
         Src/ds18x20/OneWire.c
-        )
+        Src/at24cxx/at24cxx.c
+)
 
 set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
 set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
@@ -59,7 +61,7 @@ add_executable(${PROJECT_NAME}
         ${STARTUP_LOCATION}
         ${SOURCES}
         ${LINKER_SCRIPT}
-        )
+)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
         ${CMAKE_IAR_ELFTOOL} --silent --ihex $<TARGET_FILE:${PROJECT_NAME}> $<IF:$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>>,$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>,$<TARGET_PROPERTY:${PROJECT_NAME},NAME>>.hex)

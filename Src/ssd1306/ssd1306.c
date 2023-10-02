@@ -28,7 +28,7 @@ extern I2C_HandleTypeDef hi2c1;
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
 
 HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command) {
-    return HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x00, 1, &command, 1, 100);
+    return HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT, &command, 1, 100);
 }
 
 /* SSD1306 data buffer */
@@ -112,7 +112,7 @@ void SSD1306_UpdateScreen() {
         SSD1306_WriteCommand(0x10);
 
         /* Write multi data */
-        HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x40, 1, &SSD1306_Buffer[SSD1306_WIDTH * m], SSD1306_WIDTH, 100);
+        HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x40, I2C_MEMADD_SIZE_8BIT, &SSD1306_Buffer[SSD1306_WIDTH * m], SSD1306_WIDTH, 100);
     }
 }
 

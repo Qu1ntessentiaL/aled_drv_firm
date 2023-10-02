@@ -4,6 +4,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart1, huart2;
 TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 DMA_HandleTypeDef hdma_tim4_ch3;
+CRC_HandleTypeDef hcrc;
 
 void Error_Handler(void) {
     __disable_irq();

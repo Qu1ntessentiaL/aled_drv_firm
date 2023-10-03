@@ -15,6 +15,7 @@ int main() {
     UART1_Init();
     __enable_irq();
     SSD1306_Init();
+    CtrlRegCfg(1, 1, 1, 1, hi2c1);
     PC13_Init();
     TIM2_Init();
     HAL_TIM_Base_Start_IT(&htim2);
@@ -22,12 +23,11 @@ int main() {
     ARGB_Init();
     ARGB_SetBrightness(255);
     UART2_Init();
-    //SetDateTime(3, 3, 10, 23, 17, 19, 0, hi2c1);
-    /*
     DS18B20_Init(&DS18B20_Struct, &huart2);
     DS18B20_InitializationCommand(&DS18B20_Struct);
-    if (~DS18B20_ReadRom(&DS18B20_Struct))
+    if (~DS18B20_ReadRom(&DS18B20_Struct)) {
         HAL_UART_Transmit_IT(&huart1, "ReadROM complete!\n\r", 19);
+    }
     DS18B20_ReadScratchpad(&DS18B20_Struct);
 
     uint8_t settings[3];
@@ -38,9 +38,7 @@ int main() {
     DS18B20_InitializationCommand(&DS18B20_Struct);
     DS18B20_SkipRom(&DS18B20_Struct);
     DS18B20_WriteScratchpad(&DS18B20_Struct, settings);
-     */
     while (1) {
-        /*
         DS18B20_InitializationCommand(&DS18B20_Struct);
         DS18B20_SkipRom(&DS18B20_Struct);
         DS18B20_ConvertT(&DS18B20_Struct, DS18B20_DATA);
@@ -48,7 +46,7 @@ int main() {
         DS18B20_InitializationCommand(&DS18B20_Struct);
         DS18B20_SkipRom(&DS18B20_Struct);
         DS18B20_ReadScratchpad(&DS18B20_Struct);
-
+        /*
         sprintf(uart_buff, "S/N: %02X %02X %02X %02X %02X %02X; t = %.2f\n\r",
                 DS18B20_Struct.serialNumber[0],
                 DS18B20_Struct.serialNumber[1],
@@ -57,25 +55,22 @@ int main() {
                 DS18B20_Struct.serialNumber[4],
                 DS18B20_Struct.serialNumber[5],
                 DS18B20_Struct.temperature);
-
         HAL_UART_Transmit_IT(&huart1, uart_buff, 35);
-        */
         SSD1306_Fill(SSD1306_COLOR_BLACK);
-        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK){
+        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK) {
             SSD1306_GotoXY(0, 0);
             SSD1306_Puts("DS1307 = 1", &Font_11x18, SSD1306_COLOR_WHITE);
         } else {
             SSD1306_GotoXY(0, 0);
             SSD1306_Puts("DS1307 = 0", &Font_11x18, SSD1306_COLOR_WHITE);
         }
-        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK){
+        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK) {
             SSD1306_GotoXY(0, 22);
             SSD1306_Puts("AT24C32 = 1", &Font_11x18, SSD1306_COLOR_WHITE);
         } else {
             SSD1306_GotoXY(0, 22);
             SSD1306_Puts("AT24C32 = 0", &Font_11x18, SSD1306_COLOR_WHITE);
         }
-        /*
         SSD1306_GotoXY(0, 22);
         sprintf(buff, "GREEN: %d", green_g);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
@@ -85,8 +80,14 @@ int main() {
         SSD1306_UpdateScreen();
          */
         GetDateTime(ds1307_data, hi2c1);
-        sprintf(buff, "%d(%d).%d.%d %d:%d:%d\n\r", ds1307_data[4], ds1307_data[3], ds1307_data[5], ds1307_data[6],
-                                                        ds1307_data[2], ds1307_data[1], ds1307_data[0]);
+        SSD1306_GotoXY(0, 0);
+        sprintf(buff, "t = %.2f", DS18B20_Struct.temperature);
+        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        sprintf(buff, "%d(%d).%d.%d", ds1307_data[4], ds1307_data[3], ds1307_data[5], ds1307_data[6]);
+        SSD1306_GotoXY(0, 22);
+        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        SSD1306_UpdateScreen();
+        sprintf(buff, "%02d:%02d:%02d", ds1307_data[2], ds1307_data[1], ds1307_data[0]);
         SSD1306_GotoXY(0, 44);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
         SSD1306_UpdateScreen();

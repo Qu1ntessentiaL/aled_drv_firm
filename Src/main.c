@@ -5,7 +5,8 @@ extern UART_HandleTypeDef huart1, huart2;
 extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
-char buff[20], uart_buff[40];
+char buff[18], uart_buff[40];
+uint8_t ds1307_data[7];
 DS18B20_t DS18B20_Struct;
 
 int main() {
@@ -21,8 +22,9 @@ int main() {
     ARGB_Init();
     ARGB_SetBrightness(255);
     UART2_Init();
+    //SetDateTime(3, 3, 10, 23, 17, 19, 0, hi2c1);
+    /*
     DS18B20_Init(&DS18B20_Struct, &huart2);
-
     DS18B20_InitializationCommand(&DS18B20_Struct);
     if (~DS18B20_ReadRom(&DS18B20_Struct))
         HAL_UART_Transmit_IT(&huart1, "ReadROM complete!\n\r", 19);
@@ -31,12 +33,14 @@ int main() {
     uint8_t settings[3];
     settings[0] = DS18B20_Struct.temperatureLimitHigh;
     settings[1] = DS18B20_Struct.temperatureLimitLow;
-    settings[2] = DS18B20_12_BITS_CONFIG;
+    settings[2] = DS18B20_9_BITS_CONFIG;
 
     DS18B20_InitializationCommand(&DS18B20_Struct);
     DS18B20_SkipRom(&DS18B20_Struct);
     DS18B20_WriteScratchpad(&DS18B20_Struct, settings);
+     */
     while (1) {
+        /*
         DS18B20_InitializationCommand(&DS18B20_Struct);
         DS18B20_SkipRom(&DS18B20_Struct);
         DS18B20_ConvertT(&DS18B20_Struct, DS18B20_DATA);
@@ -55,16 +59,35 @@ int main() {
                 DS18B20_Struct.temperature);
 
         HAL_UART_Transmit_IT(&huart1, uart_buff, 35);
-
+        */
         SSD1306_Fill(SSD1306_COLOR_BLACK);
-        SSD1306_GotoXY(0, 0);
-        sprintf(buff, "t = %.2f", DS18B20_Struct.temperature);
-        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK){
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts("DS1307 = 1", &Font_11x18, SSD1306_COLOR_WHITE);
+        } else {
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts("DS1307 = 0", &Font_11x18, SSD1306_COLOR_WHITE);
+        }
+        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK){
+            SSD1306_GotoXY(0, 22);
+            SSD1306_Puts("AT24C32 = 1", &Font_11x18, SSD1306_COLOR_WHITE);
+        } else {
+            SSD1306_GotoXY(0, 22);
+            SSD1306_Puts("AT24C32 = 0", &Font_11x18, SSD1306_COLOR_WHITE);
+        }
+        /*
         SSD1306_GotoXY(0, 22);
         sprintf(buff, "GREEN: %d", green_g);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
         SSD1306_GotoXY(0, 44);
         sprintf(buff, "BLUE:  %d", blue_g);
+        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+        SSD1306_UpdateScreen();
+         */
+        GetDateTime(ds1307_data, hi2c1);
+        sprintf(buff, "%d(%d).%d.%d %d:%d:%d\n\r", ds1307_data[4], ds1307_data[3], ds1307_data[5], ds1307_data[6],
+                                                        ds1307_data[2], ds1307_data[1], ds1307_data[0]);
+        SSD1306_GotoXY(0, 44);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
         SSD1306_UpdateScreen();
     }

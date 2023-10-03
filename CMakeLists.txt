@@ -33,6 +33,7 @@ include_directories(
         Src/button/
         Src/ds18x20/
         Src/at24cxx/
+        Src/RTC/
 )
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
@@ -51,6 +52,7 @@ file(GLOB_RECURSE SOURCES
         Src/ds18x20/ds18x20.c
         Src/ds18x20/OneWire.c
         Src/at24cxx/at24cxx.c
+        Src/RTC/RTC.c
 )
 
 set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")

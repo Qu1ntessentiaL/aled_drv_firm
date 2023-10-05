@@ -4,7 +4,7 @@ extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1, huart2;
 extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
-void PC13_task(void *argument);
+void PC13_task(void *arg);
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
 char buff[18], uart_buff[40];
@@ -162,7 +162,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 }
 */
 
-void PC13_task(void *argument) {
+void PC13_task(void *arg) {
     PC13_Init();
     while (1) {
         HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);

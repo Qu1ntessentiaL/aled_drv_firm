@@ -31,8 +31,6 @@ include_directories(
         Drivers/CMSIS/Device/ST/STM32F1xx/Include/
         Drivers/aarch32/
         Drivers/STM32F1xx_HAL_Driver/Inc/
-        Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/
-        Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/IAR/ARM_CM3/
         Src/
         Src/ARGB/
         Src/ssd1306/
@@ -70,6 +68,8 @@ add_executable(${PROJECT_NAME}
         ${SOURCES}
         ${LINKER_SCRIPT}
 )
+
+target_link_libraries(${PROJECT_NAME} freertos_kernel)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
         ${CMAKE_IAR_ELFTOOL} --silent --ihex $<TARGET_FILE:${PROJECT_NAME}> $<IF:$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>>,$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>,$<TARGET_PROPERTY:${PROJECT_NAME},NAME>>.hex)

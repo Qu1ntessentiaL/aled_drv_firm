@@ -55,6 +55,10 @@ file(GLOB_RECURSE SOURCES
         Src/RTC/RTC.c
 )
 
+set(FREERTOS_CONFIG_FILE_DIRECTORY "${PROJECT_SOURCE_DIR}/Src" CACHE STRING "Absolute path to the directory with FreeRTOSConfig.h")
+set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "FreeRTOS port name")
+add_subdirectory(Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel)
+
 set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
 set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
 set(CMAKE_CXX_LINK_FLAGS "${COMMON_LINKER_FLAGS}")

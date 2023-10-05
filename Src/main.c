@@ -4,6 +4,8 @@ extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1, huart2;
 extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 
+void PC13_task(void *argument);
+
 uint8_t red_g = 50, green_g = 50, blue_g = 50;
 char buff[18], uart_buff[40];
 uint8_t ds1307_data[7];
@@ -15,6 +17,8 @@ int main() {
     UART1_Init();
     __enable_irq();
     SSD1306_Init();
+    xTaskCreate(PC13_task, "User LED PC13", 32, NULL, 3, NULL);
+    /*
     CtrlRegCfg(1, 1, 1, 1, hi2c1);
     PC13_Init();
     TIM2_Init();
@@ -38,6 +42,7 @@ int main() {
     DS18B20_InitializationCommand(&DS18B20_Struct);
     DS18B20_SkipRom(&DS18B20_Struct);
     DS18B20_WriteScratchpad(&DS18B20_Struct, settings);
+    */
     while (1) {
         DS18B20_InitializationCommand(&DS18B20_Struct);
         DS18B20_SkipRom(&DS18B20_Struct);
@@ -78,7 +83,7 @@ int main() {
         sprintf(buff, "BLUE:  %d", blue_g);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
         SSD1306_UpdateScreen();
-         */
+
         GetDateTime(ds1307_data, hi2c1);
         SSD1306_GotoXY(0, 0);
         sprintf(buff, "t = %.2f", DS18B20_Struct.temperature);
@@ -91,6 +96,7 @@ int main() {
         SSD1306_GotoXY(0, 44);
         SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
         SSD1306_UpdateScreen();
+        */
     }
 }
 
@@ -100,7 +106,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
         HAL_UART_Transmit_IT(&huart1, "\n\r", 7);
     }
 }
-*/
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     static uint16_t cnt = 0;
@@ -153,5 +158,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             HAL_UART_Transmit_IT(&huart1, "WHITE\n\r", 7);
         }
         BUTTON_ResetActions();
+    }
+}
+*/
+
+void PC13_task(void *argument) {
+    PC13_Init();
+    while (1) {
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        //vTaskDelay(500);
     }
 }

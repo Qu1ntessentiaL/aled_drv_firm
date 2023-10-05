@@ -22,11 +22,17 @@ set(CMAKE_ASM_FLAGS "--cpu=Cortex-M3 --fpu=None -s+ -r -t8")
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
+set(FREERTOS_CONFIG_FILE_DIRECTORY "${PROJECT_SOURCE_DIR}/Src" CACHE STRING "Absolute path to the directory with FreeRTOSConfig.h")
+set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "FreeRTOS port name")
+add_subdirectory(Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel)
+
 include_directories(
         Drivers/CMSIS/Core/Include/
         Drivers/CMSIS/Device/ST/STM32F1xx/Include/
         Drivers/aarch32/
         Drivers/STM32F1xx_HAL_Driver/Inc/
+        Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/
+        Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/IAR/ARM_CM3/
         Src/
         Src/ARGB/
         Src/ssd1306/
@@ -54,10 +60,6 @@ file(GLOB_RECURSE SOURCES
         Src/at24cxx/at24cxx.c
         Src/RTC/RTC.c
 )
-
-set(FREERTOS_CONFIG_FILE_DIRECTORY "${PROJECT_SOURCE_DIR}/Src" CACHE STRING "Absolute path to the directory with FreeRTOSConfig.h")
-set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "FreeRTOS port name")
-add_subdirectory(Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel)
 
 set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
 set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")

@@ -8,7 +8,7 @@ your application. */
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #define configUSE_TICKLESS_IDLE                 0
-#define configCPU_CLOCK_HZ                      60000000
+#define configCPU_CLOCK_HZ                      72000000
 #define configSYSTICK_CLOCK_HZ                  1000000
 #define configTICK_RATE_HZ                      250
 #define configMAX_PRIORITIES                    5
@@ -70,7 +70,7 @@ your application. */
 #define configMAX_API_CALL_INTERRUPT_PRIORITY   [dependent on processor and application]
 
 /* Define to trap errors during development. */
-#define configASSERT( ( x ) ) if( ( x ) == 0 ) vAssertCalled( __FILE__, __LINE__ )
+#define configASSERT ( x )     if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); }
 
 /* FreeRTOS MPU specific definitions. */
 #define configINCLUDE_APPLICATION_DEFINED_PRIVILEGED_FUNCTIONS 0

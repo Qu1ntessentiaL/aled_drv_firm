@@ -12,12 +12,18 @@ uint8_t ds1307_data[7];
 DS18B20_t DS18B20_Struct;
 
 int main() {
-    HAL_Init();
-    SystemClock_Config();
-    UART1_Init();
-    __enable_irq();
-    SSD1306_Init();
+    //HAL_Init();
+    //SystemClock_Config();
+    //UART1_Init();
+    //PC13_Init();
+    //__enable_irq();
+    //SSD1306_Init();
+    SysCLK_Config();
+    GPIOC->CRH |= GPIO_CRH_MODE13;
+    GPIOC->CRH &= ~GPIO_CRH_CNF13;
+    GPIOC->BSRR |= GPIO_BSRR_BS13;
     xTaskCreate(PC13_task, "User LED PC13", 32, NULL, 3, NULL);
+    vTaskStartScheduler();
     /*
     CtrlRegCfg(1, 1, 1, 1, hi2c1);
     PC13_Init();
@@ -163,9 +169,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 */
 
 void PC13_task(void *arg) {
-    PC13_Init();
     while (1) {
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-        //vTaskDelay(500);
+        GPIOC->ODR ^= GPIO_ODR_ODR13;
+        vTaskDelay(1000);
     }
 }

@@ -23,6 +23,7 @@ set(CMAKE_ASM_FLAGS "--cpu=Cortex-M3 --fpu=None -s+ -r -t8")
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
 set(FREERTOS_CONFIG_FILE_DIRECTORY "${PROJECT_SOURCE_DIR}/Src" CACHE STRING "Absolute path to the directory with FreeRTOSConfig.h")
+set(FREERTOS_HEAP "1" CACHE STRING "FreeRTOS heap model number. 1 .. 5. Or absolute path to custom heap source file")
 set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "FreeRTOS port name")
 add_subdirectory(Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel)
 
@@ -69,7 +70,7 @@ add_executable(${PROJECT_NAME}
         ${LINKER_SCRIPT}
 )
 
-target_link_libraries(${PROJECT_NAME} freertos_kernel)
+target_link_libraries(${PROJECT_NAME} PRIVATE freertos_kernel)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
         ${CMAKE_IAR_ELFTOOL} --silent --ihex $<TARGET_FILE:${PROJECT_NAME}> $<IF:$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>>,$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>,$<TARGET_PROPERTY:${PROJECT_NAME},NAME>>.hex)

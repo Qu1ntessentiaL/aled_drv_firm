@@ -168,7 +168,7 @@ void ARGB_Init(void) {
 */
     ARGB_LOC_ST = ARGB_READY; // Set Ready Flag
     TIM_CCxChannelCmd(TIM_HANDLE.Instance, TIM_CH, TIM_CCx_ENABLE); // Enable GPIO to IDLE state
-    HAL_Delay(1); // Make some delay
+    //HAL_Delay(1); // Make some delay
 }
 
 /**

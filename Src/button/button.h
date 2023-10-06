@@ -9,13 +9,13 @@
 #define BUTTONS_VERY_LONG_PRESS_MS                           3000
 
 typedef enum {
-    BUTTON_REC,
-    BUTTON_PHOTO,
-    BUTTON_UP,
-    BUTTON_LEFT,
-    BUTTON_MENU,
-    BUTTON_RIGHT,
-    BUTTON_DOWN,
+    REC,
+    PHOTO,
+    UP,
+    LEFT,
+    MENU,
+    RIGHT,
+    DOWN,
     BUTTONS_NUM
 } ButtonID;
 

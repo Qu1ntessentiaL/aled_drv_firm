@@ -1,12 +1,12 @@
 #include "button.h"
 
-static McuPin buttons[BUTTONS_NUM] = {{GPIOB, GPIO_PIN_11},   //BUTTON_REC
-                                      {GPIOB, GPIO_PIN_10},   //BUTTON_PHOTO
-                                      {GPIOA, GPIO_PIN_6},    //BUTTON_UP
-                                      {GPIOB, GPIO_PIN_1},    //BUTTON_LEFT
-                                      {GPIOA, GPIO_PIN_7},    //BUTTON_MENU
-                                      {GPIOA, GPIO_PIN_5},    //BUTTON_RIGHT
-                                      {GPIOB, GPIO_PIN_0}};   //BUTTON_DOWN
+static McuPin buttons[BUTTONS_NUM] = {{GPIOB, GPIO_PIN_11},   //REC
+                                      {GPIOB, GPIO_PIN_10},   //PHOTO
+                                      {GPIOA, GPIO_PIN_6},    //UP
+                                      {GPIOB, GPIO_PIN_1},    //LEFT
+                                      {GPIOA, GPIO_PIN_7},    //MENU
+                                      {GPIOA, GPIO_PIN_5},    //RIGHT
+                                      {GPIOB, GPIO_PIN_0}};   //DOWN
 
 static uint16_t debounceCounter[BUTTONS_NUM];
 static uint8_t waitButtonRelease[BUTTONS_NUM];

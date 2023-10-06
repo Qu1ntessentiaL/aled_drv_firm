@@ -82,7 +82,7 @@ void SystemClock_Config(void) {
     __HAL_RCC_PWR_CLK_ENABLE();
 }
 
-void PC13_Init(void) {
+void Buttons_Init(void) {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     __HAL_RCC_GPIOC_CLK_ENABLE();

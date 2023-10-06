@@ -48,6 +48,7 @@ file(GLOB_RECURSE SOURCES
         Drivers/STM32F1xx_HAL_Driver/Src/*.c
         Src/main.c
         Src/stm32f1xx_it.c
+        Src/stm32f1xx_hal_timebase_tim.c
         Src/ssd1306/ssd1306.c
         Src/ssd1306/fonts.c
         Src/ssd1306/images.c

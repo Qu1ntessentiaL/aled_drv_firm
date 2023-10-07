@@ -23,13 +23,10 @@ int main() {
     ARGB_Init();
     ARGB_SetBrightness(255);
     __enable_irq();
-    xTaskCreate(Buttons_Processing, "", 128, NULL, 3, NULL);
+    xTaskCreate(Buttons_Processing, "", 128, NULL, 2, NULL);
     xTaskCreate(RTC_task, "", 128, NULL, 2, NULL);
     vTaskStartScheduler();
     /*
-    ARGB_PreInit();
-    ARGB_Init();
-    ARGB_SetBrightness(255);
     UART2_Init();
     DS18B20_Init(&DS18B20_Struct, &huart2);
     DS18B20_InitializationCommand(&DS18B20_Struct);
@@ -173,6 +170,7 @@ void Buttons_Processing(void *pvParam) {
         GPIOC->ODR ^= GPIO_ODR_ODR13;
         vTaskDelayUntil(&xLastWakeTime, 1);
     }
+    vTaskDelete(NULL);
 }
 
 void RTC_task(void *pvParam) {
@@ -193,5 +191,11 @@ void RTC_task(void *pvParam) {
                 ds1307_data[0]);
         HAL_UART_Transmit_IT(&huart1, uart_buff, 22);
         vTaskDelayUntil(&xLastWakeTime, 5000);
+    }
+}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == &hi2c1) {
+        HAL_UART_Transmit_IT(&huart1, "OK!\n\r", 5);
     }
 }

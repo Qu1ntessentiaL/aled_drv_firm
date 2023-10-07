@@ -29,6 +29,7 @@ void UsageFault_Handler(void) {
 //void SVC_Handler(void) {}
 
 void DebugMon_Handler(void) {}
+
 /*
 void PendSV_Handler(void) {}
 
@@ -38,6 +39,10 @@ void SysTick_Handler(void) {
 */
 void I2C1_EV_IRQHandler(void) {
     HAL_I2C_EV_IRQHandler(&hi2c1);
+}
+
+void I2C1_ER_IRQHandler(void) {
+    HAL_I2C_ER_IRQHandler(&hi2c1);
 }
 
 void USART1_IRQHandler(void) {

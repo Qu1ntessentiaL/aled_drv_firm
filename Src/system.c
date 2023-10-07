@@ -134,8 +134,10 @@ void I2C1_Init() {
         Error_Handler();
     }
 
-    HAL_NVIC_SetPriority(I2C1_EV_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(I2C1_EV_IRQn, 1, 0);
     HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
+    HAL_NVIC_SetPriority(I2C1_ER_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
 }
 
 void UART1_Init() {
@@ -167,7 +169,7 @@ void UART1_Init() {
         Error_Handler();
     }
 
-    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(USART1_IRQn, 1, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
 }
 

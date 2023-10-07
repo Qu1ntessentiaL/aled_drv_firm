@@ -28,7 +28,8 @@ extern I2C_HandleTypeDef hi2c1;
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
 
 HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command) {
-    return HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT, &command, 1, 100);
+    return HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT,
+                             &command, 1, 100);
 }
 
 /* SSD1306 data buffer */
@@ -112,12 +113,13 @@ void SSD1306_UpdateScreen() {
         SSD1306_WriteCommand(0x10);
 
         /* Write multi data */
-        HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x40, I2C_MEMADD_SIZE_8BIT, &SSD1306_Buffer[SSD1306_WIDTH * m], SSD1306_WIDTH, 100);
+        HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x40, I2C_MEMADD_SIZE_8BIT,
+                          &SSD1306_Buffer[SSD1306_WIDTH * m], SSD1306_WIDTH, 100);
     }
 }
 
 void SSD1306_ToggleInvert() {
-    uint16_t i;
+    uint32_t i;
 
     /* Toggle invert */
     SSD1306.Inverted = !SSD1306.Inverted;
@@ -211,7 +213,7 @@ char SSD1306_Puts(char *str, FontDef_t *Font, SSD1306_COLOR_t color) {
 
 
 void SSD1306_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, SSD1306_COLOR_t c) {
-    int16_t dx, dy, sx, sy, err, e2, i, tmp;
+    int32_t dx, dy, sx, sy, err, e2, i, tmp;
 
     /* Check for overflow */
     if (x0 >= SSD1306_WIDTH) {
@@ -320,13 +322,10 @@ void SSD1306_DrawRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, SSD13
 }
 
 void SSD1306_DrawFilledRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, SSD1306_COLOR_t c) {
-    uint8_t i;
+    uint16_t i;
 
     /* Check input parameters */
-    if (
-            x >= SSD1306_WIDTH ||
-            y >= SSD1306_HEIGHT
-            ) {
+    if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) {
         /* Return error */
         return;
     }
@@ -357,7 +356,7 @@ void SSD1306_DrawTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, ui
 
 void SSD1306_DrawFilledTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t x3, uint16_t y3,
                                 SSD1306_COLOR_t color) {
-    int16_t deltax = 0, deltay = 0, x = 0, y = 0, xinc1 = 0, xinc2 = 0,
+    int32_t deltax = 0, deltay = 0, x = 0, y = 0, xinc1 = 0, xinc2 = 0,
             yinc1 = 0, yinc2 = 0, den = 0, num = 0, numadd = 0, numpixels = 0,
             curpixel = 0;
 
@@ -413,9 +412,9 @@ void SSD1306_DrawFilledTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t 
 }
 
 void SSD1306_DrawCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t c) {
-    int16_t f = 1 - r;
-    int16_t ddF_x = 1;
-    int16_t ddF_y = -2 * r;
+    int32_t f = 1 - r;
+    int32_t ddF_x = 1;
+    int32_t ddF_y = -2 * r;
     int16_t x = 0;
     int16_t y = r;
 
@@ -447,9 +446,9 @@ void SSD1306_DrawCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t c) {
 }
 
 void SSD1306_DrawFilledCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t c) {
-    int16_t f = 1 - r;
-    int16_t ddF_x = 1;
-    int16_t ddF_y = -2 * r;
+    int32_t f = 1 - r;
+    int32_t ddF_x = 1;
+    int32_t ddF_y = -2 * r;
     int16_t x = 0;
     int16_t y = r;
 

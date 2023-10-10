@@ -15,7 +15,6 @@ uint8_t CtrlRegCfg(uint8_t OUT, uint8_t SQWE, uint8_t RS1, uint8_t RS0, I2C_Hand
 #define RTC_I2C_ADDR (0x68 << 1)
 #endif
 
-
 uint8_t SetDateTime(uint8_t day, uint8_t weekday, uint8_t month, uint8_t year, uint8_t hour, uint8_t minute,
                     uint8_t second, I2C_HandleTypeDef hi2cx);
 

@@ -12,7 +12,7 @@ extern "C" {
 
 #include "FreeRTOS.h"
 #include "task.h"
-//#include "queue.h"
+#include "queue.h"
 
 #include "stm32f1xx_hal.h"
 #include "ssd1306/ssd1306.h"

@@ -7,8 +7,10 @@ DMA_HandleTypeDef hdma_tim4_ch3;
 CRC_HandleTypeDef hcrc;
 
 void Error_Handler(void) {
-    __disable_irq();
-    while (1) {}
+    while (1) {
+        GPIOC->ODR ^= GPIO_ODR_ODR13;
+        HAL_Delay(200);
+    }
 }
 
 void SysCLK_DeInit(void) {

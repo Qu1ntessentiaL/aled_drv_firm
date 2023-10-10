@@ -8,7 +8,10 @@ void Buttons_Processing(void *pvParam);
 
 void RTC_task(void *pvParam);
 
-uint8_t red_g = 50, green_g = 50, blue_g = 50;
+const char *weekdayName[7] = {"Sunday\0", "Monday\0", "Tuesday\0", "Wednesday\0", "Thursday\0",
+                              "Friday\0", "Saturday\0"};
+
+uint8_t red_g = 50, green_g = 50, blue_g = 50, display = 0;
 char buff[18], uart_buff[40];
 uint8_t ds1307_data[7];
 DS18B20_t DS18B20_Struct;
@@ -158,11 +161,16 @@ void Buttons_Processing(void *pvParam) {
             blue_g = 0;
             HAL_UART_Transmit_IT(&huart1, "YELLOW\n\r", 8);
         }
-        if (BUTTON_GetAction(PHOTO) == BUTTON_SHORT_PRESS) {
+        if (BUTTON_GetAction(REC) == BUTTON_LONG_PRESS) {
             red_g = 0;
             green_g = 255;
             blue_g = 255;
             HAL_UART_Transmit_IT(&huart1, "AQUA\n\r", 6);
+        }
+        if (BUTTON_GetAction(PHOTO) == BUTTON_SHORT_PRESS) {
+            if (++display > 2) {
+                display = 0;
+            }
         }
         ARGB_FillRGB(red_g, green_g, blue_g);
         while (!ARGB_Show());
@@ -185,17 +193,48 @@ void RTC_task(void *pvParam) {
     CtrlRegCfg(1, 1, 1, 1, hi2c1);
 
     while (1) {
-        GetDateTime(ds1307_data, hi2c1);
+        HAL_I2C_Mem_Read_IT(&hi2c1, RTC_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT, ds1307_data, 7);
         sprintf(uart_buff, "%02d(%1d).%02d.%02d %02d:%02d:%02d\n\r", ds1307_data[4], ds1307_data[3], ds1307_data[5],
                 ds1307_data[6], ds1307_data[2], ds1307_data[1],
                 ds1307_data[0]);
         HAL_UART_Transmit_IT(&huart1, uart_buff, 22);
-        vTaskDelayUntil(&xLastWakeTime, 5000);
+        if (display == 0) {
+            SSD1306_Fill(SSD1306_COLOR_BLACK);
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts((char *) weekdayName[ds1307_data[3] - 1], &Font_11x18, SSD1306_COLOR_WHITE);
+            sprintf(buff, "%02d.%02d.%02d", ds1307_data[4], ds1307_data[5], ds1307_data[6]);
+            SSD1306_GotoXY(0, 22);
+            SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+            sprintf(buff, "%02d:%02d:%02d", ds1307_data[2], ds1307_data[1], ds1307_data[0]);
+            SSD1306_GotoXY(0, 44);
+            SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_UpdateScreen();
+        } else if (display == 1) {
+            SSD1306_Fill(SSD1306_COLOR_BLACK);
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts("Zdes' moget", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_GotoXY(0, 22);
+            SSD1306_Puts("bit' vasha", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_GotoXY(0, 44);
+            SSD1306_Puts("reklama", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_UpdateScreen();
+        } else if (display == 2) {
+            SSD1306_Fill(SSD1306_COLOR_BLACK);
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts("1232323", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_GotoXY(0, 22);
+            SSD1306_Puts("12314342", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_GotoXY(0, 44);
+            SSD1306_Puts("123143423", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_UpdateScreen();
+        }
+        vTaskDelayUntil(&xLastWakeTime, 1000);
     }
+    vTaskDelete(NULL);
 }
 
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == &hi2c1) {
-        HAL_UART_Transmit_IT(&huart1, "OK!\n\r", 5);
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    for (uint8_t i = 0; i <= 6; i++) {
+        ds1307_data[i] = BCD2HEX(ds1307_data[i]);
     }
 }

@@ -62,7 +62,7 @@ uint8_t SetDateTime(uint8_t day, uint8_t weekday, uint8_t month, uint8_t year, u
 }
 
 void GetDateTime(uint8_t *pData, I2C_HandleTypeDef hi2cx) {
-    HAL_I2C_Mem_Read_IT(&hi2cx, RTC_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT, pData, 7);
+    HAL_I2C_Mem_Read(&hi2cx, RTC_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT, pData, 7, 100);
     for (uint8_t i = 0; i <= 6; i++) {
         pData[i] = BCD2HEX(pData[i]);
     }

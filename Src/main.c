@@ -8,13 +8,14 @@ void Buttons_Processing(void *pvParam);
 
 void RTC_task(void *pvParam);
 
+void BQ25892_task(void *pvParam);
+
 const char *weekdayName[7] = {"Sunday\0", "Monday\0", "Tuesday\0", "Wednesday\0", "Thursday\0",
                               "Friday\0", "Saturday\0"};
 
 uint8_t red_g = 50, green_g = 50, blue_g = 50, display = 0;
-char buff[18], uart_buff[40];
-uint8_t ds1307_data[7];
-DS18B20_t DS18B20_Struct;
+char buff[18], uart_buff[100];
+uint8_t ds1307_data[7], si7210_data[21] = {0};
 
 int main() {
     __disable_irq();
@@ -26,90 +27,12 @@ int main() {
     ARGB_Init();
     ARGB_SetBrightness(255);
     __enable_irq();
-    xTaskCreate(Buttons_Processing, "", 128, NULL, 2, NULL);
-    xTaskCreate(RTC_task, "", 128, NULL, 2, NULL);
+    xTaskCreate(Buttons_Processing, "1", 128, NULL, 2, NULL);
+    xTaskCreate(RTC_task, "2", 128, NULL, 3, NULL);
+    xTaskCreate(BQ25892_task, "3", 256, NULL, 3, NULL);
     vTaskStartScheduler();
-    /*
-    UART2_Init();
-    DS18B20_Init(&DS18B20_Struct, &huart2);
-    DS18B20_InitializationCommand(&DS18B20_Struct);
-    if (~DS18B20_ReadRom(&DS18B20_Struct)) {
-        HAL_UART_Transmit_IT(&huart1, "ReadROM complete!\n\r", 19);
-    }
-    DS18B20_ReadScratchpad(&DS18B20_Struct);
-
-    uint8_t settings[3];
-    settings[0] = DS18B20_Struct.temperatureLimitHigh;
-    settings[1] = DS18B20_Struct.temperatureLimitLow;
-    settings[2] = DS18B20_9_BITS_CONFIG;
-
-    DS18B20_InitializationCommand(&DS18B20_Struct);
-    DS18B20_SkipRom(&DS18B20_Struct);
-    DS18B20_WriteScratchpad(&DS18B20_Struct, settings);
-    */
-    while (1) {
-        DS18B20_InitializationCommand(&DS18B20_Struct);
-        DS18B20_SkipRom(&DS18B20_Struct);
-        DS18B20_ConvertT(&DS18B20_Struct, DS18B20_DATA);
-
-        DS18B20_InitializationCommand(&DS18B20_Struct);
-        DS18B20_SkipRom(&DS18B20_Struct);
-        DS18B20_ReadScratchpad(&DS18B20_Struct);
-        /*
-        sprintf(uart_buff, "S/N: %02X %02X %02X %02X %02X %02X; t = %.2f\n\r",
-                DS18B20_Struct.serialNumber[0],
-                DS18B20_Struct.serialNumber[1],
-                DS18B20_Struct.serialNumber[2],
-                DS18B20_Struct.serialNumber[3],
-                DS18B20_Struct.serialNumber[4],
-                DS18B20_Struct.serialNumber[5],
-                DS18B20_Struct.temperature);
-        HAL_UART_Transmit_IT(&huart1, uart_buff, 35);
-        SSD1306_Fill(SSD1306_COLOR_BLACK);
-        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK) {
-            SSD1306_GotoXY(0, 0);
-            SSD1306_Puts("DS1307 = 1", &Font_11x18, SSD1306_COLOR_WHITE);
-        } else {
-            SSD1306_GotoXY(0, 0);
-            SSD1306_Puts("DS1307 = 0", &Font_11x18, SSD1306_COLOR_WHITE);
-        }
-        if (HAL_I2C_IsDeviceReady(&hi2c1, RTC_I2C_ADDR, 5, 100) == HAL_OK) {
-            SSD1306_GotoXY(0, 22);
-            SSD1306_Puts("AT24C32 = 1", &Font_11x18, SSD1306_COLOR_WHITE);
-        } else {
-            SSD1306_GotoXY(0, 22);
-            SSD1306_Puts("AT24C32 = 0", &Font_11x18, SSD1306_COLOR_WHITE);
-        }
-        SSD1306_GotoXY(0, 22);
-        sprintf(buff, "GREEN: %d", green_g);
-        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
-        SSD1306_GotoXY(0, 44);
-        sprintf(buff, "BLUE:  %d", blue_g);
-        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
-        SSD1306_UpdateScreen();
-
-        SSD1306_GotoXY(0, 0);
-        sprintf(buff, "t = %.2f", DS18B20_Struct.temperature);
-        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
-        sprintf(buff, "%d(%d).%d.%d", ds1307_data[4], ds1307_data[3], ds1307_data[5], ds1307_data[6]);
-        SSD1306_GotoXY(0, 22);
-        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
-        SSD1306_UpdateScreen();
-        sprintf(buff, "%02d:%02d:%02d", ds1307_data[2], ds1307_data[1], ds1307_data[0]);
-        SSD1306_GotoXY(0, 44);
-        SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
-        SSD1306_UpdateScreen();
-        */
-    }
+    while (1) {}
 }
-
-/*
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-    if (GPIO_Pin == GPIO_PIN_0) {
-        HAL_UART_Transmit_IT(&huart1, "\n\r", 7);
-    }
-}
-*/
 
 void Buttons_Processing(void *pvParam) {
     portTickType xLastWakeTime;
@@ -130,6 +53,12 @@ void Buttons_Processing(void *pvParam) {
             green_g = 0;
             blue_g = 255;
             HAL_UART_Transmit_IT(&huart1, "PURPLE\n\r", 8);
+        }
+        if (BUTTON_GetAction(UP) == BUTTON_VERY_LONG_PRESS) {
+            red_g = 255;
+            green_g = 255;
+            blue_g = 0;
+            HAL_UART_Transmit_IT(&huart1, "YELLOW\n\r", 8);
         }
         if (BUTTON_GetAction(DOWN) == BUTTON_SHORT_PRESS) {
             red_g = 0;
@@ -161,12 +90,6 @@ void Buttons_Processing(void *pvParam) {
             blue_g = 0;
             HAL_UART_Transmit_IT(&huart1, "YELLOW\n\r", 8);
         }
-        if (BUTTON_GetAction(REC) == BUTTON_LONG_PRESS) {
-            red_g = 0;
-            green_g = 255;
-            blue_g = 255;
-            HAL_UART_Transmit_IT(&huart1, "AQUA\n\r", 6);
-        }
         if (BUTTON_GetAction(PHOTO) == BUTTON_SHORT_PRESS) {
             if (++display > 2) {
                 display = 0;
@@ -175,7 +98,6 @@ void Buttons_Processing(void *pvParam) {
         ARGB_FillRGB(red_g, green_g, blue_g);
         while (!ARGB_Show());
         BUTTON_ResetActions();
-        GPIOC->ODR ^= GPIO_ODR_ODR13;
         vTaskDelayUntil(&xLastWakeTime, 1);
     }
     vTaskDelete(NULL);
@@ -193,7 +115,7 @@ void RTC_task(void *pvParam) {
     CtrlRegCfg(1, 1, 1, 1, hi2c1);
 
     while (1) {
-        HAL_I2C_Mem_Read_IT(&hi2c1, RTC_I2C_ADDR, 0x00, I2C_MEMADD_SIZE_8BIT, ds1307_data, 7);
+        GetDateTime(ds1307_data, hi2c1);
         sprintf(uart_buff, "%02d(%1d).%02d.%02d %02d:%02d:%02d\n\r", ds1307_data[4], ds1307_data[3], ds1307_data[5],
                 ds1307_data[6], ds1307_data[2], ds1307_data[1],
                 ds1307_data[0]);
@@ -209,32 +131,39 @@ void RTC_task(void *pvParam) {
             SSD1306_GotoXY(0, 44);
             SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
             SSD1306_UpdateScreen();
-        } else if (display == 1) {
+        }
+        else if (display == 1) {
             SSD1306_Fill(SSD1306_COLOR_BLACK);
             SSD1306_GotoXY(0, 0);
-            SSD1306_Puts("Zdes' moget", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_Puts("MagField:", &Font_11x18, SSD1306_COLOR_WHITE);
+            sprintf(buff, "%#X", si7210_data[1]);
             SSD1306_GotoXY(0, 22);
-            SSD1306_Puts("bit' vasha", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+            sprintf(buff, "%#X", si7210_data[2]);
             SSD1306_GotoXY(0, 44);
-            SSD1306_Puts("reklama", &Font_11x18, SSD1306_COLOR_WHITE);
-            SSD1306_UpdateScreen();
-        } else if (display == 2) {
-            SSD1306_Fill(SSD1306_COLOR_BLACK);
-            SSD1306_GotoXY(0, 0);
-            SSD1306_Puts("1232323", &Font_11x18, SSD1306_COLOR_WHITE);
-            SSD1306_GotoXY(0, 22);
-            SSD1306_Puts("12314342", &Font_11x18, SSD1306_COLOR_WHITE);
-            SSD1306_GotoXY(0, 44);
-            SSD1306_Puts("123143423", &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
             SSD1306_UpdateScreen();
         }
+        else if (display == 2) {}
+        GPIOC->ODR ^= GPIO_ODR_ODR13;
         vTaskDelayUntil(&xLastWakeTime, 1000);
     }
     vTaskDelete(NULL);
 }
 
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    for (uint8_t i = 0; i <= 6; i++) {
-        ds1307_data[i] = BCD2HEX(ds1307_data[i]);
+void BQ25892_task(void *pvParam) {
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+
+    if (HAL_I2C_IsDeviceReady(&hi2c1, 0x33 << 1, 3, 100) == HAL_OK) {
+        HAL_UART_Transmit_IT(&huart1, "si7210 ready!\n\r", 15);
+    } else {
+        HAL_UART_Transmit_IT(&huart1, "si7210 connection!\n\r", 22);
     }
+
+    while (1) {
+        HAL_I2C_Mem_Read(&hi2c1, 0x33 << 1, 0xC1, I2C_MEMADD_SIZE_8BIT, si7210_data, 21, 100);
+        vTaskDelayUntil(&xLastWakeTime, 200);
+    }
+    vTaskDelete(NULL);
 }

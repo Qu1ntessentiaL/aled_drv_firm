@@ -124,7 +124,7 @@ void I2C1_Init() {
     __HAL_RCC_I2C1_CLK_ENABLE();
 
     hi2c1.Instance = I2C1;
-    hi2c1.Init.ClockSpeed = 100000;
+    hi2c1.Init.ClockSpeed = 400000;
     hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
     hi2c1.Init.OwnAddress1 = 0xA2;
     hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -137,9 +137,9 @@ void I2C1_Init() {
     }
 
     HAL_NVIC_SetPriority(I2C1_EV_IRQn, 1, 0);
-    HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
+    HAL_NVIC_DisableIRQ(I2C1_EV_IRQn);
     HAL_NVIC_SetPriority(I2C1_ER_IRQn, 1, 0);
-    HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
+    HAL_NVIC_DisableIRQ(I2C1_ER_IRQn);
 }
 
 void UART1_Init() {

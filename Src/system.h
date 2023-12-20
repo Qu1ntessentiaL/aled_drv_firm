@@ -9,6 +9,8 @@ void SysCLK_Config(void);
 
 void SystemClock_Config(void);
 
+void IWDG_Init(void);
+
 void Buttons_Init(void);
 
 void I2C1_Init(void);

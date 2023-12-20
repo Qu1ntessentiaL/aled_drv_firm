@@ -1,5 +1,6 @@
 #include "system.h"
 
+IWDG_HandleTypeDef hiwdg;
 I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart1, huart2;
 TIM_HandleTypeDef htim1, htim2, htim3, htim4;
@@ -82,6 +83,15 @@ void SystemClock_Config(void) {
     __HAL_RCC_GPIOD_CLK_ENABLE();
     __HAL_RCC_AFIO_CLK_ENABLE();
     __HAL_RCC_PWR_CLK_ENABLE();
+}
+
+void IWDG_Init(void) {
+    hiwdg.Instance = IWDG;
+    hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+    hiwdg.Init.Reload = 65535;
+    if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
+        Error_Handler();
+    }
 }
 
 void Buttons_Init(void) {

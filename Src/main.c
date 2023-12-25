@@ -4,10 +4,13 @@ extern IWDG_HandleTypeDef hiwdg;
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1, huart2;
 extern TIM_HandleTypeDef htim1, htim2, htim3, htim4;
+extern ADC_HandleTypeDef hadc1;
 
 void Buttons_Processing(void *pvParam);
 
 void RTC_task(void *pvParam);
+
+void Show_OLED(void *pvParam);
 
 const char *weekdayName[7] = {"Sunday\0", "Monday\0", "Tuesday\0", "Wednesday\0", "Thursday\0",
                               "Friday\0", "Saturday\0"};
@@ -19,6 +22,7 @@ uint8_t red_g = 50, green_g = 50, blue_g = 50, display = 0;
 char buff[18], buff_uart_tx[BUFFER_SIZE_TX];
 uint8_t buff_uart_rx[BUFFER_SIZE_RX];
 uint8_t ds1307_data[7];
+uint16_t adc1_in0 = 1703;
 
 int main() {
     __disable_irq();
@@ -27,7 +31,7 @@ int main() {
     IWDG_Init();
     UART1_Init();
     SSD1306_Init();
-
+    ADC_Init();
     if (HAL_I2C_IsDeviceReady(&hi2c1, AT24CXX_I2C_ADDR, 3, 100) == HAL_OK) {
         HAL_UART_Transmit_IT(&huart1, "EEPROM_IC ready!\n\r", 18);
     } else {
@@ -38,8 +42,9 @@ int main() {
     ARGB_Init();
     ARGB_SetBrightness(255);
     __enable_irq();
-    xTaskCreate(Buttons_Processing, "3", 256, NULL, 2, NULL);
-    xTaskCreate(RTC_task, "3", 256, NULL, 3, NULL);
+    xTaskCreate(Buttons_Processing, "1", 128, NULL, 2, NULL);
+    xTaskCreate(RTC_task, "2", 128, NULL, 2, NULL);
+    xTaskCreate(Show_OLED, "3", 256, NULL, 3, NULL);
     vTaskStartScheduler();
     while (1) {}
 }
@@ -108,7 +113,7 @@ void Buttons_Processing(void *pvParam) {
             HAL_UART_Transmit_IT(&huart1, "AQUA\n\r", 6);
         }
         if (BUTTON_GetAction(PHOTO) == BUTTON_SHORT_PRESS) {
-            if (++display > 1) {
+            if (++display > 2) {
                 display = 0;
             }
         }
@@ -140,6 +145,22 @@ void RTC_task(void *pvParam) {
             HAL_UART_Transmit_IT(&huart1, buff_uart_tx, 22);
             cnt = 0;
         }
+        GPIOC->ODR ^= GPIO_ODR_ODR13;
+        vTaskDelayUntil(&xLastWakeTime, 1000);
+    }
+    vTaskDelete(NULL);
+}
+
+void Show_OLED(void *pvParam) {
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+
+    while (1) {
+        HAL_IWDG_Refresh(&hiwdg);
+        HAL_ADC_Start(&hadc1);
+        HAL_ADC_PollForConversion(&hadc1, 100);
+        adc1_in0 = HAL_ADC_GetValue(&hadc1);
+        HAL_ADC_Stop(&hadc1);
         if (display == 0) {
             SSD1306_Fill(SSD1306_COLOR_BLACK);
             SSD1306_GotoXY(0, 0);
@@ -163,9 +184,17 @@ void RTC_task(void *pvParam) {
             SSD1306_GotoXY(0, 44);
             SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
             SSD1306_UpdateScreen();
-        } else if (display == 2) {}
-        GPIOC->ODR ^= GPIO_ODR_ODR13;
-        vTaskDelayUntil(&xLastWakeTime, 1000);
+        } else if (display == 2) {
+            SSD1306_Fill(SSD1306_COLOR_BLACK);
+            sprintf(buff, "ADC1_IN0:");
+            SSD1306_GotoXY(0, 0);
+            SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+            sprintf(buff, "%04d", adc1_in0);
+            SSD1306_GotoXY(0, 22);
+            SSD1306_Puts(buff, &Font_11x18, SSD1306_COLOR_WHITE);
+            SSD1306_UpdateScreen();
+        }
+        vTaskDelayUntil(&xLastWakeTime, 250);
     }
     vTaskDelete(NULL);
 }

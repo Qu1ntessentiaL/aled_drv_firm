@@ -25,6 +25,8 @@ void ARGB_PreInit(void);
 
 void TIM2_Init(void);
 
-void OneWire_PreInit();
+void OneWire_PreInit(void);
+
+void ADC_Init(void);
 
 #endif //SYSTEM_H

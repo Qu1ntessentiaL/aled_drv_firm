@@ -39,6 +39,8 @@ void EXTI0_IRQHandler(void);
 
 void DMA1_Channel5_IRQHandler(void);
 
+void DMA1_Channel1_IRQHandler(void);
+
 #ifdef __cplusplus
 }
 #endif

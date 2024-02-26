@@ -4,7 +4,7 @@ IWDG_HandleTypeDef hiwdg;
 I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart1, huart2;
 TIM_HandleTypeDef htim1, htim2, htim3, htim4;
-DMA_HandleTypeDef hdma_tim4_ch3;
+DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1;
 CRC_HandleTypeDef hcrc;
 ADC_HandleTypeDef hadc1;
 
@@ -404,7 +404,24 @@ void ADC_Init(void) {
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    __HAL_RCC_ADC1_CLK_ENABLE();
+    __HAL_RCC_DMA1_CLK_ENABLE();
+
+    hdma_adc1.Instance = DMA1_Channel1;
+    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc1.Init.Mode = DMA_NORMAL;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK) {
+        Error_Handler();
+    }
+
+    __HAL_LINKDMA(&hadc1, DMA_Handle, hdma_adc1);
+
+    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
     ADC_ChannelConfTypeDef sConfig = {0};
 
@@ -418,6 +435,8 @@ void ADC_Init(void) {
     if (HAL_ADC_Init(&hadc1) != HAL_OK) {
         Error_Handler();
     }
+
+    __HAL_RCC_ADC1_CLK_ENABLE();
 
     sConfig.Channel = ADC_CHANNEL_0;
     sConfig.Rank = ADC_REGULAR_RANK_1;

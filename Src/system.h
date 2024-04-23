@@ -29,4 +29,6 @@ void OneWire_PreInit(void);
 
 void ADC_Init(void);
 
+void TIM1_PWM_Init(void);
+
 #endif //SYSTEM_H

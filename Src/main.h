@@ -23,6 +23,7 @@ extern "C" {
 #include "ds18x20/ds18x20.h"
 #include "RTC/RTC.h"
 #include "at24cxx/at24cxx.h"
+#include "si7210/si7210.h"
 
 #ifdef  USE_FULL_ASSERT
 void assert_failed(uint8_t *file, uint32_t line) {}

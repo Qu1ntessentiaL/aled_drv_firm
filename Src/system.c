@@ -182,7 +182,7 @@ void UART1_Init() {
         Error_Handler();
     }
 
-    HAL_NVIC_SetPriority(USART1_IRQn, 1, 0);
+    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
 }
 

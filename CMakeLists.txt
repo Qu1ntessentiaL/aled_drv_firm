@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.15)
 project(aled_drv_firm LANGUAGES C CXX ASM)
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
@@ -22,30 +22,27 @@ set(CMAKE_ASM_FLAGS "--cpu=Cortex-M3 --fpu=None -s+ -r -t8")
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
+add_subdirectory(Drivers/STM32CubeF1)
+
 set(FREERTOS_CONFIG_FILE_DIRECTORY "${PROJECT_SOURCE_DIR}/Src" CACHE STRING "Absolute path to the directory with FreeRTOSConfig.h")
 set(FREERTOS_HEAP "1" CACHE STRING "FreeRTOS heap model number. 1 .. 5. Or absolute path to custom heap source file")
 set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "FreeRTOS port name")
 add_subdirectory(Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel)
 
 include_directories(
-        Drivers/CMSIS/Core/Include/
-        Drivers/CMSIS/Device/ST/STM32F1xx/Include/
-        Drivers/aarch32/
-        Drivers/STM32F1xx_HAL_Driver/Inc/
-        Src/
-        Src/ARGB/
-        Src/ssd1306/
-        Src/button/
-        Src/ds18x20/
-        Src/at24cxx/
-        Src/RTC/
+#       Drivers/aarch32
+        Src
+        Src/ARGB
+        Src/ssd1306
+        Src/button
+        Src/ds18x20
+        Src/at24cxx
+        Src/RTC
 )
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
 
 file(GLOB_RECURSE SOURCES
-        Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/system_stm32f1xx.c
-        Drivers/STM32F1xx_HAL_Driver/Src/*.c
         Src/main.c
         Src/stm32f1xx_it.c
         Src/stm32f1xx_hal_timebase_tim.c
@@ -71,6 +68,9 @@ add_executable(${PROJECT_NAME}
         ${LINKER_SCRIPT}
 )
 
+# Раскомментировать, если планируется использовать cmsis без библиотеки HAL
+# target_link_libraries(${PROJECT_NAME} PRIVATE cmsis)
+target_link_libraries(${PROJECT_NAME} PRIVATE stm32f1xx_hal_driver)
 target_link_libraries(${PROJECT_NAME} PRIVATE freertos_kernel)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND

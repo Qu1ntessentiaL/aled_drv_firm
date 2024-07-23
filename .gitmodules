@@ -1,6 +1,6 @@
 [submodule "Drivers/FreeRTOS-LTS"]
 	path = Drivers/FreeRTOS-LTS
 	url = git@github.com:FreeRTOS/FreeRTOS-LTS.git
-[submodule "Drivers/stm32f1xx_hal_driver"]
-	path = Drivers/stm32f1xx_hal_driver
-	url = git@github.com:STMicroelectronics/stm32f1xx_hal_driver.git
+[submodule "Drivers/STM32CubeF1"]
+	path = Drivers/STM32CubeF1
+	url = git@github.com:STMicroelectronics/STM32CubeF1.git

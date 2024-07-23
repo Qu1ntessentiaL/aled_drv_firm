@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 3.15)
-project(aled_drv_firm LANGUAGES C CXX ASM)
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR arm)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF CACHE BOOL "" FORCE)
 
-set(STARTUP_FILE_NAME startup_stm32f103xb)
-set(STARTUP_LOCATION "${CMAKE_SOURCE_DIR}/Startup/${STARTUP_FILE_NAME}.s")
-set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/stm32f103xb_flash.icf")
+project(aled_drv_firm LANGUAGES C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR arm)
 
 set(EW_ROOT_DIR "C:/Program Files/IAR Systems/Embedded Workbench 9.1/arm")
 set(CMAKE_ASM_COMPILER "${EW_ROOT_DIR}/bin/iasmarm.exe")
@@ -22,15 +20,17 @@ set(CMAKE_ASM_FLAGS "--cpu=Cortex-M3 --fpu=None -s+ -r -t8")
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 
+set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
+set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
+set(CMAKE_CXX_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
+
+# set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/stm32_toolchain_iar.cmake")
+
+add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
+
 add_subdirectory(Drivers/STM32CubeF1)
 
-set(FREERTOS_CONFIG_FILE_DIRECTORY "${PROJECT_SOURCE_DIR}/Src" CACHE STRING "Absolute path to the directory with FreeRTOSConfig.h")
-set(FREERTOS_HEAP "1" CACHE STRING "FreeRTOS heap model number. 1 .. 5. Or absolute path to custom heap source file")
-set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "FreeRTOS port name")
-add_subdirectory(Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel)
-
 include_directories(
-#       Drivers/aarch32
         Src
         Src/ARGB
         Src/ssd1306
@@ -39,8 +39,6 @@ include_directories(
         Src/at24cxx
         Src/RTC
 )
-
-add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
 
 file(GLOB_RECURSE SOURCES
         Src/main.c
@@ -58,20 +56,39 @@ file(GLOB_RECURSE SOURCES
         Src/RTC/RTC.c
 )
 
-set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
-set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
-set(CMAKE_CXX_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
-
 add_executable(${PROJECT_NAME}
         ${STARTUP_LOCATION}
         ${SOURCES}
         ${LINKER_SCRIPT}
 )
 
-# Раскомментировать, если планируется использовать cmsis без библиотеки HAL
-# target_link_libraries(${PROJECT_NAME} PRIVATE cmsis)
-target_link_libraries(${PROJECT_NAME} PRIVATE stm32f1xx_hal_driver)
-target_link_libraries(${PROJECT_NAME} PRIVATE freertos_kernel)
+# ------- Настройка сборки FreeRTOS -------
+
+set(FREERTOS_KERNEL_PATH "Drivers/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel")
+
+add_library(freertos_config INTERFACE)
+
+target_include_directories(freertos_config
+        INTERFACE
+        "Src"
+)
+
+if (DEFINED FREERTOS_SMP_EXAMPLE AND FREERTOS_SMP_EXAMPLE STREQUAL "1")
+    message(STATUS "Build FreeRTOS SMP example")
+    # Adding the following configurations to build SMP template port
+    add_compile_options( -DconfigNUMBER_OF_CORES=2 -DconfigUSE_PASSIVE_IDLE_HOOK=0 )
+endif()
+
+set(FREERTOS_HEAP "1" CACHE STRING "" FORCE)
+
+set(FREERTOS_PORT "IAR_ARM_CM3" CACHE STRING "" FORCE)
+
+add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
+
+# -----------------------------------------
+
+# stm32f1xx_hal_driver заменить на cmsis, если нет надобности в HAL
+target_link_libraries(${PROJECT_NAME} PRIVATE stm32f1xx_hal_driver freertos_kernel freertos_config)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
         ${CMAKE_IAR_ELFTOOL} --silent --ihex $<TARGET_FILE:${PROJECT_NAME}> $<IF:$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>>,$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>,$<TARGET_PROPERTY:${PROJECT_NAME},NAME>>.hex)

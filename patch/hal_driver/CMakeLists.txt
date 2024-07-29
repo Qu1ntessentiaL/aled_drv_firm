@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(STM32F1XX_HAL_CONF_H_DIR "../../../../Src")
-add_definitions(-DSTM32F103xB)
+add_definitions(-DSTM32F103xB -DUSE_HAL_DRIVER)
 
 #Найти все C-файлы в директории
 file(GLOB_RECURSE ALL_C_SOURCES "Src/*.c")
@@ -21,4 +21,4 @@ target_include_directories(stm32f1xx_hal_driver PUBLIC
         ${STM32F1XX_HAL_CONF_H_DIR}
 )
 
-target_link_libraries(stm32f1xx_hal_driver cmsis)
+target_link_libraries(stm32f1xx_hal_driver PUBLIC cmsis)

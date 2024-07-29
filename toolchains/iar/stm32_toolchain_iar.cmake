@@ -1,11 +1,10 @@
-message("${CMAKE_SOURCE_DIR}")
 # Установка компиляторов
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
-# set(STARTUP_FILE_NAME startup_stm32f103xb)
-# set(STARTUP_LOCATION "${CMAKE_SOURCE_DIR}/Startup/${STARTUP_FILE_NAME}.s")
-# set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/stm32f103xb_flash.icf")
+set(STARTUP_FILE_NAME startup_stm32f103xb)
+set(STARTUP_LOCATION "${CMAKE_SOURCE_DIR}/toolchains/iar/${STARTUP_FILE_NAME}.s")
+set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/toolchains/iar/stm32f103xb_flash.icf")
 
 set(EW_ROOT_DIR "C:/Program Files/IAR Systems/Embedded Workbench 9.1/arm")
 set(CMAKE_ASM_COMPILER "${EW_ROOT_DIR}/bin/iasmarm.exe")

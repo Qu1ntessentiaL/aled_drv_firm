@@ -7,24 +7,7 @@ project(aled_drv_firm LANGUAGES C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR arm)
-
-set(EW_ROOT_DIR "C:/Program Files/IAR Systems/Embedded Workbench 9.1/arm")
-set(CMAKE_ASM_COMPILER "${EW_ROOT_DIR}/bin/iasmarm.exe")
-
-set(COMMON_COMPILER_FLAGS "--cpu=Cortex-M3 --fpu=None --dlib_config normal --no_cse --no_unroll --no_code_motion --no_tbaa --no_clustering --no_scheduling --endian=little -e")
-set(CMAKE_C_FLAGS "${COMMON_COMPILER_FLAGS} ")
-set(CMAKE_CXX_FLAGS "${COMMON_COMPILER_FLAGS} --c++ --no_exceptions --no_rtti")
-set(CMAKE_ASM_FLAGS "--cpu=Cortex-M3 --fpu=None -s+ -r -t8")
-
-set(CMAKE_EXECUTABLE_SUFFIX ".elf")
-
-set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
-set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
-set(CMAKE_CXX_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
-
-# set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/stm32_toolchain_iar.cmake")
+include(toolchains/iar/stm32_toolchain_iar.cmake)
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F103xB)
 
@@ -76,8 +59,8 @@ target_include_directories(freertos_config
 if (DEFINED FREERTOS_SMP_EXAMPLE AND FREERTOS_SMP_EXAMPLE STREQUAL "1")
     message(STATUS "Build FreeRTOS SMP example")
     # Adding the following configurations to build SMP template port
-    add_compile_options( -DconfigNUMBER_OF_CORES=2 -DconfigUSE_PASSIVE_IDLE_HOOK=0 )
-endif()
+    add_compile_options(-DconfigNUMBER_OF_CORES=2 -DconfigUSE_PASSIVE_IDLE_HOOK=0)
+endif ()
 
 set(FREERTOS_HEAP "1" CACHE STRING "" FORCE)
 

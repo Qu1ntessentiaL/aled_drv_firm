@@ -1,7 +1,11 @@
 #include "RtcManager.h"
 
-RtcManager::RtcManager(UART_HandleTypeDef *uart_handle) : huart(uart_handle) {
-    // Constructor implementation
+RtcManager::RtcManager(RTC_HandleTypeDef hrtc_handle, UART_HandleTypeDef *huart_handle,
+                       RTC_TimeTypeDef currentTime_handle,
+                       RTC_DateTypeDef currentDate_handle) : hrtc(hrtc_handle), huart(*huart_handle),
+                                                             currentTime(currentTime_handle),
+                                                             currentDate(currentDate_handle) {
+
 }
 
 void RtcManager::Init() {
@@ -10,7 +14,7 @@ void RtcManager::Init() {
 
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
-    hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
+    hrtc.Init.OutPut = RTC_OUTPUTSOURCE_ALARM;
     if (HAL_RTC_Init(&hrtc) != HAL_OK) {
         ErrorHandler();
     }
@@ -65,33 +69,6 @@ void RtcManager::SendDateToUart() {
     PrintDate(currentDate);
 }
 
-void RtcManager::ProcessUartCommand() {
-    if (huart->RxXferCount > 0) {
-        // Пример простого парсинга команды (предполагается, что команды заканчиваются '\n')
-        char command[100];
-        uint16_t len = sizeof(command) - 1;
-        memcpy(command, uartRxBuffer, len);
-        command[len] = '\0';
-
-        // Обработка команды
-        uint8_t hours, minutes, seconds;
-        uint8_t year, month, day, weekday;
-
-        if (sscanf(command, "SET_TIME %hhu %hhu %hhu", &hours, &minutes, &seconds) == 3) {
-            SetTime(hours, minutes, seconds);
-        } else if (sscanf(command, "SET_DATE %hhu %hhu %hhu %hhu", &year, &month, &day, &weekday) == 4) {
-            SetDate(year, month, day, weekday);
-        } else if (strcmp(command, "GET_TIME") == 0) {
-            GetTime();
-        } else if (strcmp(command, "GET_DATE") == 0) {
-            GetDate();
-        }
-
-        // Очистите буфер после обработки
-        memset(uartRxBuffer, 0, sizeof(uartRxBuffer));
-    }
-}
-
 void RtcManager::UpdateTime() {
     HAL_RTC_GetTime(&hrtc, &currentTime, RTC_FORMAT_BIN);
 }
@@ -102,21 +79,21 @@ void RtcManager::UpdateDate() {
 
 void RtcManager::PrintTime(const RTC_TimeTypeDef &time) {
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "Time: %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds);
-    HAL_UART_Transmit(huart, (uint8_t *) buffer, strlen(buffer), HAL_MAX_DELAY);
+    snprintf(buffer, sizeof(buffer), "Time: %02d:%02d:%02d\r\n", time.Hours, time.Minutes, time.Seconds);
+    HAL_UART_Transmit(&huart, (uint8_t *) buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
 void RtcManager::PrintDate(const RTC_DateTypeDef &date) {
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "Date: %02d-%02d-%02d, Weekday: %d\n", date.Year, date.Month, date.Date,
+    snprintf(buffer, sizeof(buffer), "Date: %02d-%02d-%02d, Weekday: %d\r\n", date.Year, date.Month, date.Date,
              date.WeekDay);
-    HAL_UART_Transmit(huart, (uint8_t *) buffer, strlen(buffer), HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart, (uint8_t *) buffer, strlen(buffer), HAL_MAX_DELAY);
 }
 
 void RtcManager::ErrorHandler() {
     __disable_irq();
     const char *errorMsg = "Error occurred!\r\n";
-    HAL_UART_Transmit(huart, (uint8_t *) errorMsg, strlen(errorMsg), HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart, (uint8_t *) errorMsg, strlen(errorMsg), HAL_MAX_DELAY);
 
     while (1) {}
 }

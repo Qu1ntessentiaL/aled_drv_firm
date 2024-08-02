@@ -6,7 +6,8 @@
 
 class RtcManager {
 public:
-    RtcManager(UART_HandleTypeDef *huart);
+    RtcManager(RTC_HandleTypeDef hrtc, UART_HandleTypeDef *huart, RTC_TimeTypeDef currentTime,
+               RTC_DateTypeDef currentDate);
 
     void Init();
 
@@ -22,11 +23,9 @@ public:
 
     void SendDateToUart();
 
-    void ProcessUartCommand();
-
 private:
     RTC_HandleTypeDef hrtc;
-    UART_HandleTypeDef *huart;
+    UART_HandleTypeDef huart;
     uint8_t uartRxBuffer[100];
     RTC_TimeTypeDef currentTime;
     RTC_DateTypeDef currentDate;

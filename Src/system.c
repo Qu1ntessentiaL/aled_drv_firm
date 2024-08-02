@@ -7,6 +7,10 @@ TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1;
 CRC_HandleTypeDef hcrc;
 ADC_HandleTypeDef hadc1;
+RTC_HandleTypeDef hrtc;
+
+RTC_TimeTypeDef sTime = {0};
+RTC_DateTypeDef DateToUpdate = {0};
 
 void Error_Handler(void) {
     while (1) {
@@ -449,6 +453,32 @@ void ADC_Init(void) {
     sConfig.Rank = ADC_REGULAR_RANK_1;
     sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
+        Error_Handler();
+    }
+}
+
+void MX_RTC_Init(void) {
+
+    hrtc.Instance = RTC;
+    hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
+    hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
+    if (HAL_RTC_Init(&hrtc) != HAL_OK) {
+        Error_Handler();
+    }
+
+    sTime.Hours = 12;
+    sTime.Minutes = 50;
+    sTime.Seconds = 3;
+
+    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) {
+        Error_Handler();
+    }
+    DateToUpdate.WeekDay = RTC_WEEKDAY_FRIDAY;
+    DateToUpdate.Month = RTC_MONTH_AUGUST;
+    DateToUpdate.Date = 2;
+    DateToUpdate.Year = 24;
+
+    if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BIN) != HAL_OK) {
         Error_Handler();
     }
 }

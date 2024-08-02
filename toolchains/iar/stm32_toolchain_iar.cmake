@@ -8,11 +8,12 @@ set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/toolchains/iar/stm32f103xb_flash.icf")
 
 set(EW_ROOT_DIR "C:/Program Files/IAR Systems/Embedded Workbench 9.1/arm")
 set(CMAKE_ASM_COMPILER "${EW_ROOT_DIR}/bin/iasmarm.exe")
-set(CMAKE_С_COMPILER "${EW_ROOT_DIR}/bin/iссarm.exe")
+set(CMAKE_C_COMPILER "${EW_ROOT_DIR}/bin/iccarm.exe")
+set(CMAKE_CXX_COMPILER "${EW_ROOT_DIR}/bin/iccarm.exe")
 
 set(COMMON_COMPILER_FLAGS "--cpu=Cortex-M3 --fpu=None --dlib_config normal --no_cse --no_unroll --no_code_motion --no_tbaa --no_clustering --no_scheduling --endian=little -e")
-set(CMAKE_C_FLAGS "${COMMON_COMPILER_FLAGS} ")
-set(CMAKE_CXX_FLAGS "${COMMON_COMPILER_FLAGS} --c++ --no_exceptions --no_rtti")
+set(CMAKE_C_FLAGS "${COMMON_COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS "${COMMON_COMPILER_FLAGS} --c++ --no_static_destruction --no_exceptions --no_rtti")
 set(CMAKE_ASM_FLAGS "--cpu=Cortex-M3 --fpu=None -s+ -r -t8")
 
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
@@ -20,3 +21,15 @@ set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(COMMON_LINKER_FLAGS "--semihosting --config ${LINKER_SCRIPT}")
 set(CMAKE_C_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
 set(CMAKE_CXX_LINK_FLAGS "${COMMON_LINKER_FLAGS}")
+
+if(NOT EXISTS "${CMAKE_C_COMPILER}")
+    message(FATAL_ERROR "C Compiler not found: ${CMAKE_C_COMPILER}")
+endif()
+
+if(NOT EXISTS "${CMAKE_CXX_COMPILER}")
+    message(FATAL_ERROR "CXX Compiler not found: ${CMAKE_CXX_COMPILER}")
+endif()
+
+if(NOT EXISTS "${CMAKE_ASM_COMPILER}")
+    message(FATAL_ERROR "ASM Compiler not found: ${CMAKE_ASM_COMPILER}")
+endif()

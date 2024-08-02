@@ -2,6 +2,9 @@
 #define MAIN_H
 
 #ifdef __cplusplus
+
+#include "RtcManager.h"
+
 extern "C" {
 #endif
 

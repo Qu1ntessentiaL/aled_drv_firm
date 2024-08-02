@@ -2,6 +2,8 @@
 
 extern I2C_HandleTypeDef hi2c1, hi2c2;
 extern UART_HandleTypeDef huart1;
+const char *weekdayName[7] = {"Sunday\0", "Monday\0", "Tuesday\0", "Wednesday\0", "Thursday\0",
+                              "Friday\0", "Saturday\0"};
 
 uint8_t CtrlRegCfg(uint8_t OUT, uint8_t SQWE, uint8_t RS1, uint8_t RS0, I2C_HandleTypeDef hi2cx) {
     if (OUT > 1 || SQWE > 1 || RS1 > 1 || RS0 > 1) {

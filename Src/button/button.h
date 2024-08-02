@@ -1,6 +1,10 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "stm32f1xx.h"
 
 #define GPIO_BUTTON_NOT_PRESSED                              (GPIO_PIN_SET)
@@ -50,5 +54,9 @@ extern ButtonAction BUTTON_GetAction(uint8_t index);
 extern void BUTTON_ResetActions();
 
 extern void BUTTON_Init();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //BUTTON_H

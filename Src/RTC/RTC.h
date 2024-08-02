@@ -4,6 +4,8 @@
 #include "stm32f1xx.h"
 #include <stdbool.h>
 
+extern const char *weekdayName[7];
+
 #define RTC_IC 0
 
 #if (RTC_IC == 0)

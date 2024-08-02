@@ -1,6 +1,10 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "stm32f1xx.h"
 
 void SysCLK_DeInit(void);
@@ -28,5 +32,9 @@ void TIM2_Init(void);
 void OneWire_PreInit(void);
 
 void ADC_Init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //SYSTEM_H

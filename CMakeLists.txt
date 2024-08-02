@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(CMAKE_VERBOSE_MAKEFILE OFF CACHE BOOL "" FORCE)
+set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "" FORCE)
 
 project(aled_drv_firm LANGUAGES C CXX ASM)
 
@@ -24,7 +24,7 @@ include_directories(
 )
 
 file(GLOB_RECURSE SOURCES
-        Src/main.c
+        Src/main.cpp
         Src/stm32f1xx_it.c
         Src/stm32f1xx_hal_timebase_tim.c
         Src/ssd1306/ssd1306.c
@@ -36,7 +36,7 @@ file(GLOB_RECURSE SOURCES
         Src/ds18x20/ds18x20.c
         Src/ds18x20/OneWire.c
         Src/at24cxx/at24cxx.c
-        Src/RTC/RTC.c
+        Src/RTC/RtcManager.cpp
 )
 
 add_executable(${PROJECT_NAME}

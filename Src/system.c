@@ -4,18 +4,18 @@ IWDG_HandleTypeDef hiwdg;
 I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart1, huart2;
 TIM_HandleTypeDef htim1, htim2, htim3, htim4;
-DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1;
+DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1, hdma_usart1_tx;
 CRC_HandleTypeDef hcrc;
 ADC_HandleTypeDef hadc1;
 RTC_HandleTypeDef hrtc;
 
-RTC_TimeTypeDef sTime = {0};
-RTC_DateTypeDef DateToUpdate = {0};
+RTC_TimeTypeDef sTime_glob = {0};
+RTC_DateTypeDef sDate_glob = {0};
 
 void Error_Handler(void) {
     while (1) {
-        GPIOC->ODR ^= GPIO_ODR_ODR13;
-        HAL_Delay(200);
+        HAL_UART_Transmit(&huart1, "Error_Handler called\n\r", sizeof("Error_Handler called\n\r"), 100);
+        HAL_Delay(1000);
     }
 }
 
@@ -179,6 +179,25 @@ void UART1_Init() {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    __HAL_RCC_DMA1_CLK_ENABLE();
+
+    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+
+    hdma_usart1_tx.Instance = DMA1_Channel4;
+    hdma_usart1_tx.Init.Direction = DMA_MEMORY_TO_PERIPH;
+    hdma_usart1_tx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_usart1_tx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_usart1_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart1_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_usart1_tx.Init.Mode = DMA_NORMAL;
+    hdma_usart1_tx.Init.Priority = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&hdma_usart1_tx) != HAL_OK) {
+        Error_Handler();
+    }
+
+    __HAL_LINKDMA(&huart1, hdmatx, hdma_usart1_tx);
+
     __HAL_RCC_USART1_CLK_ENABLE();
 
     huart1.Instance = USART1;
@@ -193,7 +212,7 @@ void UART1_Init() {
         Error_Handler();
     }
 
-    HAL_NVIC_SetPriority(USART1_IRQn, 1, 0);
+    HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
 }
 
@@ -458,6 +477,9 @@ void ADC_Init(void) {
 }
 
 void MX_RTC_Init(void) {
+    HAL_PWR_EnableBkUpAccess();
+    __HAL_RCC_BKP_CLK_ENABLE();
+    __HAL_RCC_RTC_ENABLE();
 
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
@@ -466,19 +488,20 @@ void MX_RTC_Init(void) {
         Error_Handler();
     }
 
-    sTime.Hours = 12;
-    sTime.Minutes = 50;
-    sTime.Seconds = 3;
+    sTime_glob.Hours = 12;
+    sTime_glob.Minutes = 50;
+    sTime_glob.Seconds = 3;
 
-    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) {
+    if (HAL_RTC_SetTime(&hrtc, &sTime_glob, RTC_FORMAT_BIN) != HAL_OK) {
         Error_Handler();
     }
-    DateToUpdate.WeekDay = RTC_WEEKDAY_FRIDAY;
-    DateToUpdate.Month = RTC_MONTH_AUGUST;
-    DateToUpdate.Date = 2;
-    DateToUpdate.Year = 24;
 
-    if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BIN) != HAL_OK) {
+    sDate_glob.WeekDay = RTC_WEEKDAY_FRIDAY;
+    sDate_glob.Month = RTC_MONTH_AUGUST;
+    sDate_glob.Date = 2;
+    sDate_glob.Year = 24;
+
+    if (HAL_RTC_SetDate(&hrtc, &sDate_glob, RTC_FORMAT_BIN) != HAL_OK) {
         Error_Handler();
     }
 }

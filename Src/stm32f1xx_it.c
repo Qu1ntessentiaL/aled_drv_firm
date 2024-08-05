@@ -3,7 +3,7 @@
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim2, htim3;
-extern DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1;
+extern DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1, hdma_usart1_tx;
 
 void NMI_Handler(void) {
     while (1) {
@@ -67,4 +67,8 @@ void DMA1_Channel5_IRQHandler(void) {
 
 void DMA1_Channel1_IRQHandler(void) {
     HAL_DMA_IRQHandler(&hdma_adc1);
+}
+
+void DMA1_Channel4_IRQHandler(void) {
+    HAL_DMA_IRQHandler(&hdma_usart1_tx);
 }

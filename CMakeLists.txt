@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "" FORCE)
+set(CMAKE_VERBOSE_MAKEFILE OFF CACHE BOOL "" FORCE)
 
 project(aled_drv_firm LANGUAGES C CXX ASM)
 

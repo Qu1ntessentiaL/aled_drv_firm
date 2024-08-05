@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "main.h"
+#include "stm32f1xx.h"
 
 void NMI_Handler(void);
 
@@ -40,6 +40,8 @@ void EXTI0_IRQHandler(void);
 void DMA1_Channel5_IRQHandler(void);
 
 void DMA1_Channel1_IRQHandler(void);
+
+void DMA1_Channel4_IRQHandler(void);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
-#ifndef RTC_H
-#define RTC_H
+#ifndef RTC_IC_H
+#define RTC_IC_H
 
 #include "stm32f1xx.h"
 #include <stdbool.h>
@@ -33,4 +33,4 @@ static inline uint8_t HEX2BCD(uint8_t HEX) {
     return (((HEX / 10) << 4) | (HEX % 10));
 }
 
-#endif //RTC_H
+#endif //RTC_IC_H

@@ -1,12 +1,28 @@
 #include "button.h"
 
-static McuPin buttons[BUTTONS_NUM] = {{GPIOB, GPIO_PIN_11},   //REC
-                                      {GPIOB, GPIO_PIN_10},   //PHOTO
-                                      {GPIOA, GPIO_PIN_6},    //UP
-                                      {GPIOB, GPIO_PIN_1},    //LEFT
-                                      {GPIOA, GPIO_PIN_7},    //MENU
-                                      {GPIOA, GPIO_PIN_5},    //RIGHT
-                                      {GPIOB, GPIO_PIN_0}};   //DOWN
+//REC = PA5
+//PHOTO = PA4
+//UP = PA0
+//LEFT = PA3
+//MENU = PA1
+//RIGHT = PC13
+//DOWN = PA2
+//SCENE = PA6
+//AWB = PA7
+//D2 = PB1
+//D3 = PB10
+//D5 = PB0
+//IR_IC = PB11
+
+static McuPin buttons[BUTTONS_NUM] = {{GPIOA, GPIO_PIN_5},   //REC
+                                      {GPIOA, GPIO_PIN_4},   //PHOTO
+                                      {GPIOA, GPIO_PIN_0},    //UP
+                                      {GPIOA, GPIO_PIN_3},    //LEFT
+                                      {GPIOA, GPIO_PIN_1},    //MENU
+                                      {GPIOC, GPIO_PIN_13},    //RIGHT
+                                      {GPIOA, GPIO_PIN_2},    //DOWN
+                                      {GPIOA, GPIO_PIN_6},    //SCENE
+                                      {GPIOA, GPIO_PIN_7}};   //AWB
 
 static uint16_t debounceCounter[BUTTONS_NUM];
 static uint8_t waitButtonRelease[BUTTONS_NUM];
@@ -121,4 +137,32 @@ void BUTTON_Init() {
         buttonActions[i] = BUTTON_NONE;
         buttonState[i] = BUTTON_STARTING;
     }
+}
+
+void Button_PreInit() {
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 |
+                          GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_10;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    GPIOB->BSRR |= GPIO_BSRR_BS0 | GPIO_BSRR_BS1 | GPIO_BSRR_BS10;
+
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = GPIO_PIN_13;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 }

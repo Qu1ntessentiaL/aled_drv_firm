@@ -20,6 +20,8 @@ typedef enum {
     MENU,
     RIGHT,
     DOWN,
+    SCENE,
+    AWB,
     BUTTONS_NUM
 } ButtonID;
 
@@ -45,15 +47,17 @@ typedef enum {
     BUTTON_VERY_LONG_PRESS = 3,
 } ButtonAction;
 
-extern void BUTTON_Process();
+void BUTTON_Process();
 
-extern void BUTTON_TimerProcess();
+void BUTTON_TimerProcess();
 
-extern ButtonAction BUTTON_GetAction(uint8_t index);
+ButtonAction BUTTON_GetAction(uint8_t index);
 
-extern void BUTTON_ResetActions();
+void BUTTON_ResetActions();
 
-extern void BUTTON_Init();
+void BUTTON_Init();
+
+void Button_PreInit();
 
 #ifdef __cplusplus
 }

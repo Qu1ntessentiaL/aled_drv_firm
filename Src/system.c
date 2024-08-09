@@ -7,13 +7,10 @@ TIM_HandleTypeDef htim1, htim2, htim3, htim4;
 DMA_HandleTypeDef hdma_tim4_ch3, hdma_adc1, hdma_usart1_tx;
 CRC_HandleTypeDef hcrc;
 ADC_HandleTypeDef hadc1;
-RTC_HandleTypeDef hrtc;
-
-RTC_TimeTypeDef sTime_glob = {0};
-RTC_DateTypeDef sDate_glob = {0};
 
 void Error_Handler(void) {
     while (1) {
+        GPIOB->BSRR |= GPIO_BSRR_BR1;
         HAL_UART_Transmit(&huart1, "Error_Handler called\n\r", sizeof("Error_Handler called\n\r"), 100);
         HAL_Delay(1000);
     }
@@ -472,36 +469,6 @@ void ADC_Init(void) {
     sConfig.Rank = ADC_REGULAR_RANK_1;
     sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
-    }
-}
-
-void MX_RTC_Init(void) {
-    HAL_PWR_EnableBkUpAccess();
-    __HAL_RCC_BKP_CLK_ENABLE();
-    __HAL_RCC_RTC_ENABLE();
-
-    hrtc.Instance = RTC;
-    hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
-    hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
-    if (HAL_RTC_Init(&hrtc) != HAL_OK) {
-        Error_Handler();
-    }
-
-    sTime_glob.Hours = 12;
-    sTime_glob.Minutes = 50;
-    sTime_glob.Seconds = 3;
-
-    if (HAL_RTC_SetTime(&hrtc, &sTime_glob, RTC_FORMAT_BIN) != HAL_OK) {
-        Error_Handler();
-    }
-
-    sDate_glob.WeekDay = RTC_WEEKDAY_FRIDAY;
-    sDate_glob.Month = RTC_MONTH_AUGUST;
-    sDate_glob.Date = 2;
-    sDate_glob.Year = 24;
-
-    if (HAL_RTC_SetDate(&hrtc, &sDate_glob, RTC_FORMAT_BIN) != HAL_OK) {
         Error_Handler();
     }
 }

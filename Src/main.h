@@ -1,13 +1,6 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#ifdef __cplusplus
-
-#include "RtcManager.h"
-
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
@@ -24,15 +17,11 @@ extern "C" {
 #include "button/button.h"
 #include "ds18x20/OneWire.h"
 #include "ds18x20/ds18x20.h"
-#include "RTC/RTC.h"
+#include "RTC/RTC_periph.h"
 #include "at24cxx/at24cxx.h"
 
 #ifdef  USE_FULL_ASSERT
 void assert_failed(uint8_t *file, uint32_t line) {}
 #endif /* USE_FULL_ASSERT */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* MAIN_H */

@@ -33,8 +33,6 @@ void OneWire_PreInit(void);
 
 void ADC_Init(void);
 
-void MX_RTC_Init(void);
-
 #ifdef __cplusplus
 }
 #endif

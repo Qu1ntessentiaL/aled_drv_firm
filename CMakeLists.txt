@@ -24,7 +24,7 @@ include_directories(
 )
 
 file(GLOB_RECURSE SOURCES
-        Src/main.cpp
+        Src/main.c
         Src/stm32f1xx_it.c
         Src/stm32f1xx_hal_timebase_tim.c
         Src/ssd1306/ssd1306.c
@@ -36,7 +36,7 @@ file(GLOB_RECURSE SOURCES
         Src/ds18x20/ds18x20.c
         Src/ds18x20/OneWire.c
         Src/at24cxx/at24cxx.c
-        Src/RTC/RtcManager.cpp
+        Src/RTC/RTC_periph.c
 )
 
 add_executable(${PROJECT_NAME}

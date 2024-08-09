@@ -1,4 +1,4 @@
-#include "RTC.h"
+#include "RTC_IC.h"
 
 extern I2C_HandleTypeDef hi2c1, hi2c2;
 extern UART_HandleTypeDef huart1;

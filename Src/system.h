@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <string.h>
 #include "stm32f1xx.h"
 
 void SysCLK_DeInit(void);
@@ -32,6 +33,8 @@ void TIM2_Init(void);
 void OneWire_PreInit(void);
 
 void ADC_Init(void);
+
+void TIM1_PWM_Init(void);
 
 #ifdef __cplusplus
 }

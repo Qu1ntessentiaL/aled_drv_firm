@@ -1,5 +1,4 @@
 #include "main.h"
-#include <time32.h>
 
 extern IWDG_HandleTypeDef hiwdg;
 extern I2C_HandleTypeDef hi2c1;
@@ -10,12 +9,31 @@ extern RTC_HandleTypeDef hrtc;
 
 DateTimeStruct sDateTime;
 
-uint8_t buff_rx[3];
-bool st_flag = false, sd_flag = false;
+#define UART_BUFFER_SIZE 10
+uint8_t uartBuffer[UART_BUFFER_SIZE];
+uint8_t uartRxData;
+uint16_t bufferIndex = 0;
 
-void RTC_task(void *pvParameters);
+#define UART_QUEUE_SIZE 10
+
+// Очередь для хранения данных
+QueueHandle_t uartQueue;
+
+typedef enum {
+    FLAG_NONE = 0x00,
+    FLAG_DT_SET = 0x01,
+    FLAG_YEAR_SET = 0x02,
+    FLAG_MONTH_SET = 0x04,
+    FLAG_DAY_SET = 0x08,
+} PermissionFlags;
+
+uint16_t permissions = FLAG_NONE;
+
+void vMainTask(void *pvParameters);
 
 void Buttons_task(void *pvParameters);
+
+void vDynamicTask(void *pvParameters);
 
 int main() {
     __disable_irq();
@@ -24,21 +42,39 @@ int main() {
     UART1_Init();
     Button_PreInit();
     BUTTON_Init();
+    MX_RTC_Init();
+    TIM1_PWM_Init();
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
     __enable_irq();
     HAL_UART_Transmit_IT(&huart1, (uint8_t *) ("STM32F103CBT6 ready!\n\r"), strlen("STM32F103CBT6 ready!\n\r"));
-    xTaskCreate(RTC_task, "RTC task", 128, NULL, 3, NULL);
+    // Создание очереди
+    uartQueue = xQueueCreate(UART_QUEUE_SIZE, sizeof(uint8_t));
+    xTaskCreate(vMainTask, "Main task", 128, NULL, 3, NULL);
     xTaskCreate(Buttons_task, "Buttons task", 128, NULL, 3, NULL);
     vTaskStartScheduler();
 }
 
-void RTC_task(void *pvParameters) {
+void vMainTask(void *pvParameters) {
+    TaskHandle_t xDynamicTaskHandle = NULL;
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
-    MX_RTC_Init();
-    GPIOB->BSRR |= GPIO_BSRR_BR0;
     while (1) {
-        //HAL_RTC_GetTime(&hrtc, &sTime_glob, RTC_FORMAT_BIN); // RTC_FORMAT_BIN , RTC_FORMAT_BCD
-        //HAL_RTC_GetDate(&hrtc, &sDate_glob, RTC_FORMAT_BIN);
+        if (permissions & FLAG_DT_SET) {
+            xTaskCreate(vDynamicTask,
+                        "DynamicTask",
+                        128,
+                        NULL,
+                        2,
+                        &xDynamicTaskHandle);
+            if (xDynamicTaskHandle != NULL) {
+                permissions &= ~FLAG_DT_SET;
+                GPIOB->BSRR |= GPIO_BSRR_BR10;
+            } else {
+                GPIOB->BSRR |= GPIO_BSRR_BR1;
+            }
+        }
+
+        GPIOB->ODR ^= GPIO_ODR_ODR0;
         DateTime_Get(&sDateTime);
         vTaskDelayUntil(&xLastWakeTime, 1000);
     }
@@ -60,16 +96,13 @@ void Buttons_task(void *pvParameters) {
             HAL_UART_Transmit_DMA(&huart1, (uint8_t *) buff_tx, strlen(buff_tx));
         }
         if (BUTTON_GetAction(PHOTO) == BUTTON_SHORT_PRESS) {
-            HAL_UART_Transmit_DMA(&huart1, (uint8_t *) "Insert time [3-byte: hours, minutes, seconds]:\n\r",
-                                  strlen("Insert time [3-byte: hours, minutes, seconds]:\n\r"));
-            HAL_UART_Receive_IT(&huart1, buff_rx, 3);
-            st_flag = true;
+            const char buff_temp[] = "Запущен процесс установки времени!\n\r";
+            HAL_UART_Transmit_IT(&huart1, (uint8_t *) buff_temp,
+                                 strlen(buff_temp));
+            permissions |= FLAG_DT_SET;
         }
         if (BUTTON_GetAction(UP) == BUTTON_SHORT_PRESS) {
-            HAL_UART_Transmit_DMA(&huart1, (uint8_t *) "Insert date [3-byte: year, month, date]:\n\r",
-                                  strlen("Insert date [3-byte: year, month, date]:\n\r"));
-            HAL_UART_Receive_IT(&huart1, buff_rx, 3);
-            sd_flag = true;
+
         }
         if (BUTTON_GetAction(LEFT) == BUTTON_SHORT_PRESS) {
 
@@ -99,21 +132,19 @@ void Buttons_task(void *pvParameters) {
     //vTaskDelete(NULL);
 }
 
+void vDynamicTask(void *pvParameters) {
+    char buff_tx[] = "Введите год:\n\r";
+    HAL_UART_Transmit_IT(&huart1, (uint8_t *) buff_tx, strlen(buff_tx));
+    HAL_UART_Receive_IT();
+    while (1) {}
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    /*
-    if (st_flag) {
-        sTime_glob.Hours = buff_rx[0];
-        sTime_glob.Minutes = buff_rx[1];
-        sTime_glob.Seconds = buff_rx[2];
-        HAL_RTC_SetTime(&hrtc, &sTime_glob, RTC_FORMAT_BIN);
-        st_flag = false;
+    if (huart->Instance == USART1) {
+        // Отправка полученного байта в очередь
+        xQueueSendFromISR(uartQueue, &uartRxData, NULL);
+
+        // Начинаем приём следующего байта
+        HAL_UART_Receive_IT(&huart1, &uartRxData, 1);
     }
-    if (sd_flag) {
-        sDate_glob.Year = buff_rx[0];
-        sDate_glob.Month = buff_rx[1];
-        sDate_glob.Date = buff_rx[2];
-        HAL_RTC_SetDate(&hrtc, &sDate_glob, RTC_FORMAT_BIN);
-        sd_flag = false;
-    }
-     */
 }

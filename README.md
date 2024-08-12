@@ -1,7 +1,8 @@
 # Проект для работы с STM32F103CBT6 (Bluepill) в среде разработки CLION
 В проект включены как подмодули репозитории:
-1) FreeRTOS ()
-2) STM32CubeF1 ()
+1) FreeRTOS
+2) STM32CubeF1
+
 В папке patch находятся скрипты copy.sh и clear.sh, которые копируют и удаляют необходимые файлы CMakeLists.txt
 в нужные папки подмодуля STM32CubeF1;
 В папке toolchains/iar находятся файлы, необходимые для компилятора IAR Embedded Workbench, в дальнейшем возможно

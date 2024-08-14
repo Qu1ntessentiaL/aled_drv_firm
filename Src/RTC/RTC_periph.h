@@ -17,7 +17,7 @@ typedef struct {
     uint8_t Seconds;
 } DateTimeStruct;
 
-void DateTime_Set(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second);
+void DateTime_Set(DateTimeStruct *sDateTime);
 
 void DateTime_Get(DateTimeStruct *sDateTime);
 

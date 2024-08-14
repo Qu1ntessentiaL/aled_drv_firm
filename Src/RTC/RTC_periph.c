@@ -6,8 +6,6 @@
 #define SECONDS_IN_DAY 86400
 
 RTC_HandleTypeDef hrtc;
-//RTC_TimeTypeDef sTime_glob = {0};
-//RTC_DateTypeDef sDate_glob = {0};
 
 uint32_t days_since_epoch(uint16_t year, uint8_t month, uint8_t day);
 
@@ -15,9 +13,6 @@ static uint32_t get_unix_time(uint16_t year, uint8_t month, uint8_t day, uint8_t
 
 static void unix_time_to_date(uint32_t unix_time, uint16_t *year, uint8_t *month, uint8_t *day, uint8_t *hour,
                               uint8_t *minute, uint8_t *second);
-
-// Определяем количество дней в месяцах для невисокосного года
-const uint8_t days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 // Функция для проверки високосного года
 static inline bool is_leap_year(uint16_t year) {
@@ -89,8 +84,13 @@ unix_time_to_date(uint32_t unix_time, uint16_t *year, uint8_t *month, uint8_t *d
     *day = days - cumulative_days[*month - 1] + 1;
 }
 
-void DateTime_Set(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second) {
-    uint32_t cnt = get_unix_time(year, month, day, hour, minute, second);
+void DateTime_Set(DateTimeStruct *sDateTime) {
+    uint32_t cnt = get_unix_time(sDateTime->Year,
+                                 sDateTime->Month,
+                                 sDateTime->Date,
+                                 sDateTime->Hours,
+                                 sDateTime->Minutes,
+                                 sDateTime->Seconds);
 
     // Разблокируем доступ к регистрам RTC
     RTC->CRL |= RTC_CRL_CNF;
@@ -117,12 +117,10 @@ void DateTime_Get(DateTimeStruct *sDateTime) {
     // Преобразование UNIX-времени в дату и время
     unix_time_to_date(unix_time, &year, &month, &day, &hour, &minute, &second);
 
-    // Заполнение структуры RTC_DateTypeDef
+    // Заполнение структуры
     sDateTime->Year = year;
     sDateTime->Month = month;
     sDateTime->Date = day;
-
-    // Заполнение структуры RTC_TimeTypeDef
     sDateTime->Hours = hour;
     sDateTime->Minutes = minute;
     sDateTime->Seconds = second;
@@ -136,25 +134,5 @@ void MX_RTC_Init(void) {
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
-    if (HAL_RTC_Init(&hrtc) != HAL_OK) {
-        Error_Handler();
-    }
-    /*
-    sTime_glob.Hours = 1;
-    sTime_glob.Minutes = 0;
-    sTime_glob.Seconds = 0;
-
-    if (HAL_RTC_SetTime(&hrtc, &sTime_glob, RTC_FORMAT_BIN) != HAL_OK) {
-        Error_Handler();
-    }
-
-    sDate_glob.WeekDay = RTC_WEEKDAY_FRIDAY;
-    sDate_glob.Month = RTC_MONTH_AUGUST;
-    sDate_glob.Date = 9;
-    sDate_glob.Year = 24;
-
-    if (HAL_RTC_SetDate(&hrtc, &sDate_glob, RTC_FORMAT_BIN) != HAL_OK) {
-        Error_Handler();
-    }
-     */
+    HAL_RTC_Init(&hrtc);
 }

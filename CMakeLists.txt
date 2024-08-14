@@ -73,5 +73,13 @@ add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
 # stm32f1xx_hal_driver заменить на cmsis, если нет надобности в HAL
 target_link_libraries(${PROJECT_NAME} PRIVATE stm32f1xx_hal_driver freertos_kernel freertos_config)
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
-        ${CMAKE_IAR_ELFTOOL} --silent --ihex $<TARGET_FILE:${PROJECT_NAME}> $<IF:$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>>,$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>,$<TARGET_PROPERTY:${PROJECT_NAME},NAME>>.hex)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_IAR_ELFTOOL} --silent --ihex $<TARGET_FILE:${PROJECT_NAME}> $<IF:$<BOOL:$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>>,$<TARGET_PROPERTY:${PROJECT_NAME},OUTPUT_NAME>,$<TARGET_PROPERTY:${PROJECT_NAME},NAME>>.hex)
+
+# Добавляем кастомную команду для стирания флэш-памяти
+add_custom_target(erase_flash
+        COMMAND ${CMAKE_COMMAND} -E echo "Erasing flash memory..."
+        COMMAND openocd -f interface/stlink.cfg -f ${CMAKE_CURRENT_SOURCE_DIR}/toolchains/iar/stm32f103xb_erase.cfg -c "init; reset init; stm32f1x mass_erase 0; reset halt; shutdown"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Erasing the flash memory of STM32F103C8T6"
+)
